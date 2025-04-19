@@ -1,3 +1,12 @@
+// Entidades Base
+export interface Tag {
+  id: string
+  name: string
+  slug: string
+  type: "destination" | "package" // para diferenciar tags de destinos e pacotes
+  description?: string
+}
+
 export interface User {
   id: string
   name: string
@@ -5,45 +14,8 @@ export interface User {
   role: "user" | "admin"
   isLoggedIn: boolean
   avatar: string | null
-}
-
-export interface AuthResult {
-  success: boolean
-  user: User | null
-  message?: string
-}
-
-export interface Package {
-  id: string
-  name: string
-  description: string
-  imageUrl: string
-  price: number
-  duration: number
-  destinations: string[]
-  featured: boolean
-  discount?: number
-  tags: string[]
-  inclusions: string[]
-  maxGuests?: number
-  excluded?: string[]
-  itinerary: Array<{
-    day: number
-    title: string
-    description: string
-  }>
-}
-
-export interface Testimonial {
-  id: string
-  name: string
-  avatar: string
-  rating: number
-  comment: string
-  packageId: string
-  destinationId?: string
-  date: string
-  featured?: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Destination {
@@ -57,23 +29,62 @@ export interface Destination {
   imageUrl: string
   featured: boolean
   popular?: boolean
-  tags: string[]
+  tagIds: string[] // alterado de tags para tagIds
   region?: string
+  createdAt: string
+  updatedAt: string
 }
 
-export interface SearchFilters {
-  query?: string
+export interface Package {
+  id: string
+  name: string
+  description: string
+  imageUrl: string
+  price: number
+  duration: number
+  destinationIds: string[] // alterado de destinations para destinationIds
+  featured: boolean
+  discount?: number
+  tagIds: string[] // alterado de tags para tagIds
+  inclusions: string[]
+  maxGuests?: number
+  excluded?: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Itinerary {
+  id: string
+  packageId: string
+  day: number
+  title: string
+  description: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Testimonial {
+  id: string
+  userId: string // alterado: agora referencia o User
+  packageId: string
   destinationId?: string
-  minPrice?: number
-  maxPrice?: number
-  minDuration?: number
-  maxDuration?: number
-  ratings?: number[]
-  tags?: string[]
-  sortBy?: string
-  page?: number
-  limit?: number
-  travelers?: number
+  rating: number
+  comment: string
+  date: string
+  featured?: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Message {
+  id: string
+  userId: string // alterado: agora referencia o User
+  subject: string
+  content: string
+  status: "unread" | "read" | "archived"
+  date: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Booking {
@@ -86,5 +97,29 @@ export interface Booking {
   travelers: number
   totalPrice: number
   paymentStatus: "pending" | "paid" | "refunded"
+  createdAt: string
+  updatedAt: string
+}
+
+// Interfaces auxiliares
+export interface AuthResult {
+  success: boolean
+  user: User | null
+  message?: string
+}
+
+export interface SearchFilters {
+  query?: string
+  destinationId?: string
+  minPrice?: number
+  maxPrice?: number
+  minDuration?: number
+  maxDuration?: number
+  ratings?: number[]
+  tagIds?: string[] // alterado de tags para tagIds
+  sortBy?: string
+  page?: number
+  limit?: number
+  travelers?: number
 }
 
