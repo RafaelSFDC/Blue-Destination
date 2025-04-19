@@ -1,20 +1,31 @@
-import { ID, Query } from "appwrite";
-import {
-  databases,
-  storage,
-  DATABASE_ID,
-  COLLECTIONS,
-  STORAGE_BUCKET_ID,
-} from "../appwrite";
+import { Client, Databases, Account, ID, Query } from "appwrite";
+import { COLLECTIONS } from "../appwrite";
 import type {
-  User,
-  Package,
   Destination,
-  Booking,
+  Package,
   Testimonial,
-} from "../types";
+  SearchFilters,
+  User,
+  AuthResult,
+} from "@/lib/types";
 
-export class AppwriteService {
+class AppwriteService {
+  private client: Client;
+  private databases: Databases;
+  private account: Account;
+  private databaseId: string;
+
+  constructor() {
+    this.client = new Client();
+    this.client
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "")
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "");
+
+    this.databases = new Databases(this.client);
+    this.account = new Account(this.client);
+    this.databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "";
+  }
+
   // Autenticação
   async createUser(
     email: string,
@@ -22,43 +33,363 @@ export class AppwriteService {
     name: string
   ): Promise<User> {
     try {
-      const userData = await databases.createDocument(
-        DATABASE_ID,
-        COLLECTIONS.USERS,
-        ID.unique(),
-        {
-          email,
-          name,
-          role: "user",
-          isLoggedIn: true,
-          avatar: null,
-        }
-      );
-      return userData as unknown as User;
+      // Tentar login primeiro
+      const session = await this.account.createEmailSession(email, password);
+      const user = await this.account.get();
+
+      return {
+        id: user.$id,
+        email: user.email,
+        name: name,
+        role: "user",
+      };
     } catch (error) {
-      console.error("Error creating user:", error);
-      throw error;
+      // Se falhar, criar novo usuário
+      try {
+        const newUser = await this.account.create(
+          ID.unique(),
+          email,
+          password,
+          name
+        );
+        await this.account.createEmailSession(email, password);
+
+        // Criar documento do usuário no banco de dados
+        await this.databases.createDocument(
+          this.databaseId,
+          COLLECTIONS.USERS,
+          newUser.$id,
+          {
+            email: email,
+            name: name,
+            role: "user",
+          }
+        );
+
+        return {
+          id: newUser.$id,
+          email: newUser.email,
+          name: name,
+          role: "user",
+        };
+      } catch (createError) {
+        throw createError;
+      }
     }
   }
 
   // Destinos
   async getDestinations(): Promise<Destination[]> {
     try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.DESTINATIONS
+      const response = await this.databases.listDocuments(
+        this.databaseId,
+        COLLECTIONS.DESTINATIONS,
+        [Query.limit(100)]
       );
-      return response.documents as unknown as Destination[];
+
+      // Transformar os documentos em objetos Destination
+      return response.documents.map((doc) => {
+        return {
+          id: doc.$id,
+          name: doc.name,
+          location: doc.location,
+          description: doc.description,
+          price: doc.price,
+          rating: doc.rating,
+          reviewCount: doc.reviewCount,
+          imageUrl: doc.imageUrl,
+          featured: doc.featured,
+          region: doc.region,
+          // Para tags, precisamos lidar com a relação
+          tags: doc.tags ? doc.tags.map((tag: any) => tag.name) : [],
+          tagIds: doc.tags ? doc.tags.map((tag: any) => tag.$id) : [],
+        };
+      });
     } catch (error) {
       console.error("Error fetching destinations:", error);
-      throw error;
+      return [];
+    }
+  }
+
+  async getDestinationById(id: string): Promise<Destination | null> {
+    try {
+      const doc = await this.databases.getDocument(
+        this.databaseId,
+        COLLECTIONS.DESTINATIONS,
+        id
+      );
+
+      return {
+        id: doc.$id,
+        name: doc.name,
+        location: doc.location,
+        description: doc.description,
+        price: doc.price,
+        rating: doc.rating,
+        reviewCount: doc.reviewCount,
+        imageUrl: doc.imageUrl,
+        featured: doc.featured,
+        region: doc.region,
+        // Para tags, precisamos lidar com a relação
+        tags: doc.tags ? doc.tags.map((tag: any) => tag.name) : [],
+        tagIds: doc.tags ? doc.tags.map((tag: any) => tag.$id) : [],
+      };
+    } catch (error) {
+      console.error("Error fetching destination:", error);
+      return null;
+    }
+  }
+
+  async getFeaturedDestinations(limit = 6): Promise<Destination[]> {
+    try {
+      const response = await this.databases.listDocuments(
+        this.databaseId,
+        COLLECTIONS.DESTINATIONS,
+        [Query.equal("featured", true), Query.limit(limit)]
+      );
+
+      return response.documents.map((doc) => {
+        return {
+          id: doc.$id,
+          name: doc.name,
+          location: doc.location,
+          description: doc.description,
+          price: doc.price,
+          rating: doc.rating,
+          reviewCount: doc.reviewCount,
+          imageUrl: doc.imageUrl,
+          featured: doc.featured,
+          region: doc.region,
+          // Para tags, precisamos lidar com a relação
+          tags: doc.tags ? doc.tags.map((tag: any) => tag.name) : [],
+          tagIds: doc.tags ? doc.tags.map((tag: any) => tag.$id) : [],
+        };
+      });
+    } catch (error) {
+      console.error("Error fetching featured destinations:", error);
+      return [];
     }
   }
 
   // Pacotes
-  async searchPackages(filters: any): Promise<Package[]> {
+  async getPackages(): Promise<Package[]> {
     try {
-      let queries: string[] = [];
+      const response = await this.databases.listDocuments(
+        this.databaseId,
+        COLLECTIONS.PACKAGES,
+        [Query.limit(100)]
+      );
+
+      // Buscar itinerários para cada pacote
+      const packages = await Promise.all(
+        response.documents.map(async (doc) => {
+          const itineraryResponse = await this.databases.listDocuments(
+            this.databaseId,
+            COLLECTIONS.ITINERARY,
+            [Query.equal("package", doc.$id), Query.orderAsc("day")]
+          );
+
+          const itinerary = itineraryResponse.documents.map((item) => ({
+            day: item.day,
+            title: item.title,
+            description: item.description,
+          }));
+
+          return {
+            id: doc.$id,
+            name: doc.name,
+            description: doc.description,
+            // Para destinations, precisamos lidar com a relação
+            destinations: doc.destinations
+              ? doc.destinations.map((dest: any) => dest.name)
+              : [],
+            destinationIds: doc.destinations
+              ? doc.destinations.map((dest: any) => dest.$id)
+              : [],
+            duration: doc.duration,
+            price: doc.price,
+            discount: doc.discount || 0,
+            imageUrl: doc.imageUrl,
+            featured: doc.featured,
+            inclusions: doc.inclusions || [],
+            // Para tags, precisamos lidar com a relação
+            tags: doc.tags ? doc.tags.map((tag: any) => tag.name) : [],
+            tagIds: doc.tags ? doc.tags.map((tag: any) => tag.$id) : [],
+            itinerary,
+          };
+        })
+      );
+
+      return packages;
+    } catch (error) {
+      console.error("Error fetching packages:", error);
+      return [];
+    }
+  }
+
+  async getPackageById(id: string): Promise<Package | null> {
+    try {
+      const doc = await this.databases.getDocument(
+        this.databaseId,
+        COLLECTIONS.PACKAGES,
+        id
+      );
+
+      // Buscar itinerário do pacote
+      const itineraryResponse = await this.databases.listDocuments(
+        this.databaseId,
+        COLLECTIONS.ITINERARY,
+        [Query.equal("package", id), Query.orderAsc("day")]
+      );
+
+      const itinerary = itineraryResponse.documents.map((item) => ({
+        day: item.day,
+        title: item.title,
+        description: item.description,
+      }));
+
+      return {
+        id: doc.$id,
+        name: doc.name,
+        description: doc.description,
+        // Para destinations, precisamos lidar com a relação
+        destinations: doc.destinations
+          ? doc.destinations.map((dest: any) => dest.name)
+          : [],
+        destinationIds: doc.destinations
+          ? doc.destinations.map((dest: any) => dest.$id)
+          : [],
+        duration: doc.duration,
+        price: doc.price,
+        discount: doc.discount || 0,
+        imageUrl: doc.imageUrl,
+        featured: doc.featured,
+        inclusions: doc.inclusions || [],
+        // Para tags, precisamos lidar com a relação
+        tags: doc.tags ? doc.tags.map((tag: any) => tag.name) : [],
+        tagIds: doc.tags ? doc.tags.map((tag: any) => tag.$id) : [],
+        itinerary,
+      };
+    } catch (error) {
+      console.error("Error fetching package:", error);
+      return null;
+    }
+  }
+
+  async getFeaturedPackages(limit = 6): Promise<Package[]> {
+    try {
+      const response = await this.databases.listDocuments(
+        this.databaseId,
+        COLLECTIONS.PACKAGES,
+        [Query.equal("featured", true), Query.limit(limit)]
+      );
+
+      // Buscar itinerários para cada pacote
+      const packages = await Promise.all(
+        response.documents.map(async (doc) => {
+          const itineraryResponse = await this.databases.listDocuments(
+            this.databaseId,
+            COLLECTIONS.ITINERARY,
+            [Query.equal("package", doc.$id), Query.orderAsc("day")]
+          );
+
+          const itinerary = itineraryResponse.documents.map((item) => ({
+            day: item.day,
+            title: item.title,
+            description: item.description,
+          }));
+
+          return {
+            id: doc.$id,
+            name: doc.name,
+            description: doc.description,
+            // Para destinations, precisamos lidar com a relação
+            destinations: doc.destinations
+              ? doc.destinations.map((dest: any) => dest.name)
+              : [],
+            destinationIds: doc.destinations
+              ? doc.destinations.map((dest: any) => dest.$id)
+              : [],
+            duration: doc.duration,
+            price: doc.price,
+            discount: doc.discount || 0,
+            imageUrl: doc.imageUrl,
+            featured: doc.featured,
+            inclusions: doc.inclusions || [],
+            // Para tags, precisamos lidar com a relação
+            tags: doc.tags ? doc.tags.map((tag: any) => tag.name) : [],
+            tagIds: doc.tags ? doc.tags.map((tag: any) => tag.$id) : [],
+            itinerary,
+          };
+        })
+      );
+
+      return packages;
+    } catch (error) {
+      console.error("Error fetching featured packages:", error);
+      return [];
+    }
+  }
+
+  async getPackagesByDestination(destinationId: string): Promise<Package[]> {
+    try {
+      const response = await this.databases.listDocuments(
+        this.databaseId,
+        COLLECTIONS.PACKAGES,
+        [Query.search("destinations", destinationId)]
+      );
+
+      // Buscar itinerários para cada pacote
+      const packages = await Promise.all(
+        response.documents.map(async (doc) => {
+          const itineraryResponse = await this.databases.listDocuments(
+            this.databaseId,
+            COLLECTIONS.ITINERARY,
+            [Query.equal("package", doc.$id), Query.orderAsc("day")]
+          );
+
+          const itinerary = itineraryResponse.documents.map((item) => ({
+            day: item.day,
+            title: item.title,
+            description: item.description,
+          }));
+
+          return {
+            id: doc.$id,
+            name: doc.name,
+            description: doc.description,
+            // Para destinations, precisamos lidar com a relação
+            destinations: doc.destinations
+              ? doc.destinations.map((dest: any) => dest.name)
+              : [],
+            destinationIds: doc.destinations
+              ? doc.destinations.map((dest: any) => dest.$id)
+              : [],
+            duration: doc.duration,
+            price: doc.price,
+            discount: doc.discount || 0,
+            imageUrl: doc.imageUrl,
+            featured: doc.featured,
+            inclusions: doc.inclusions || [],
+            // Para tags, precisamos lidar com a relação
+            tags: doc.tags ? doc.tags.map((tag: any) => tag.name) : [],
+            tagIds: doc.tags ? doc.tags.map((tag: any) => tag.$id) : [],
+            itinerary,
+          };
+        })
+      );
+
+      return packages;
+    } catch (error) {
+      console.error("Error fetching packages by destination:", error);
+      return [];
+    }
+  }
+
+  // Busca e filtros
+  async searchPackages(filters: SearchFilters): Promise<Package[]> {
+    try {
+      const queries: any[] = [Query.limit(filters.limit || 20)];
 
       if (filters.query) {
         queries.push(Query.search("name", filters.query));
@@ -68,81 +399,275 @@ export class AppwriteService {
         queries.push(Query.search("destinations", filters.destinationId));
       }
 
-      const response = await databases.listDocuments(
-        DATABASE_ID,
+      if (filters.minPrice !== undefined) {
+        queries.push(Query.greaterThanEqual("price", filters.minPrice));
+      }
+
+      if (filters.maxPrice !== undefined) {
+        queries.push(Query.lessThanEqual("price", filters.maxPrice));
+      }
+
+      if (filters.minDuration !== undefined) {
+        queries.push(Query.greaterThanEqual("duration", filters.minDuration));
+      }
+
+      if (filters.maxDuration !== undefined) {
+        queries.push(Query.lessThanEqual("duration", filters.maxDuration));
+      }
+
+      if (filters.tagIds && filters.tagIds.length > 0) {
+        // Para cada tag, adicionamos uma condição de busca
+        filters.tagIds.forEach((tagId) => {
+          queries.push(Query.search("tags", tagId));
+        });
+      }
+
+      if (filters.sortBy) {
+        switch (filters.sortBy) {
+          case "price_asc":
+            queries.push(Query.orderAsc("price"));
+            break;
+          case "price_desc":
+            queries.push(Query.orderDesc("price"));
+            break;
+          case "duration_asc":
+            queries.push(Query.orderAsc("duration"));
+            break;
+          case "duration_desc":
+            queries.push(Query.orderDesc("duration"));
+            break;
+          default:
+            queries.push(Query.orderDesc("featured"));
+            break;
+        }
+      }
+
+      const response = await this.databases.listDocuments(
+        this.databaseId,
         COLLECTIONS.PACKAGES,
         queries
       );
-      return response.documents as unknown as Package[];
+
+      // Buscar itinerários para cada pacote
+      const packages = await Promise.all(
+        response.documents.map(async (doc) => {
+          const itineraryResponse = await this.databases.listDocuments(
+            this.databaseId,
+            COLLECTIONS.ITINERARY,
+            [Query.equal("package", doc.$id), Query.orderAsc("day")]
+          );
+
+          const itinerary = itineraryResponse.documents.map((item) => ({
+            day: item.day,
+            title: item.title,
+            description: item.description,
+          }));
+
+          return {
+            id: doc.$id,
+            name: doc.name,
+            description: doc.description,
+            // Para destinations, precisamos lidar com a relação
+            destinations: doc.destinations
+              ? doc.destinations.map((dest: any) => dest.name)
+              : [],
+            destinationIds: doc.destinations
+              ? doc.destinations.map((dest: any) => dest.$id)
+              : [],
+            duration: doc.duration,
+            price: doc.price,
+            discount: doc.discount || 0,
+            imageUrl: doc.imageUrl,
+            featured: doc.featured,
+            inclusions: doc.inclusions || [],
+            // Para tags, precisamos lidar com a relação
+            tags: doc.tags ? doc.tags.map((tag: any) => tag.name) : [],
+            tagIds: doc.tags ? doc.tags.map((tag: any) => tag.$id) : [],
+            itinerary,
+          };
+        })
+      );
+
+      return packages;
     } catch (error) {
       console.error("Error searching packages:", error);
-      throw error;
-    }
-  }
-
-  // Upload de imagem
-  async uploadImage(file: File): Promise<string> {
-    try {
-      const response = await storage.createFile(
-        STORAGE_BUCKET_ID,
-        ID.unique(),
-        file
-      );
-      return response.$id;
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      throw error;
+      return [];
     }
   }
 
   // Depoimentos
   async createTestimonial(
     testimonial: Omit<Testimonial, "id" | "date">
-  ): Promise<Testimonial> {
+  ): Promise<Testimonial | null> {
     try {
-      const response = await databases.createDocument(
-        DATABASE_ID,
+      const now = new Date();
+
+      const doc = await this.databases.createDocument(
+        this.databaseId,
         COLLECTIONS.TESTIMONIALS,
         ID.unique(),
         {
-          ...testimonial,
-          date: new Date().toISOString(),
+          content: testimonial.content,
+          rating: testimonial.rating,
+          date: now.toISOString(),
+          user: testimonial.userId,
+          package: testimonial.packageId,
+          destination: testimonial.destinationId || null,
         }
       );
-      return response as unknown as Testimonial;
+
+      return {
+        id: doc.$id,
+        content: doc.content,
+        rating: doc.rating,
+        date: doc.date,
+        userId: doc.user.$id,
+        packageId: doc.package.$id,
+        destinationId: doc.destination ? doc.destination.$id : null,
+      };
     } catch (error) {
       console.error("Error creating testimonial:", error);
-      throw error;
+      return null;
     }
   }
 
-  // Reservas
-  async createBooking(booking: Omit<Booking, "id">): Promise<Booking> {
+  async getTestimonialsByPackage(packageId: string): Promise<Testimonial[]> {
     try {
-      const response = await databases.createDocument(
-        DATABASE_ID,
+      const response = await this.databases.listDocuments(
+        this.databaseId,
+        COLLECTIONS.TESTIMONIALS,
+        [Query.equal("package", packageId), Query.orderDesc("date")]
+      );
+
+      return response.documents.map((doc) => ({
+        id: doc.$id,
+        content: doc.content,
+        rating: doc.rating,
+        date: doc.date,
+        userId: doc.user.$id,
+        packageId: doc.package.$id,
+        destinationId: doc.destination ? doc.destination.$id : null,
+      }));
+    } catch (error) {
+      console.error("Error fetching testimonials by package:", error);
+      return [];
+    }
+  }
+
+  async getTestimonialsByDestination(
+    destinationId: string
+  ): Promise<Testimonial[]> {
+    try {
+      const response = await this.databases.listDocuments(
+        this.databaseId,
+        COLLECTIONS.TESTIMONIALS,
+        [Query.equal("destination", destinationId), Query.orderDesc("date")]
+      );
+
+      return response.documents.map((doc) => ({
+        id: doc.$id,
+        content: doc.content,
+        rating: doc.rating,
+        date: doc.date,
+        userId: doc.user.$id,
+        packageId: doc.package.$id,
+        destinationId: doc.destination ? doc.destination.$id : null,
+      }));
+    } catch (error) {
+      console.error("Error fetching testimonials by destination:", error);
+      return [];
+    }
+  }
+
+  // Tags
+  async getTags(): Promise<any[]> {
+    try {
+      const response = await this.databases.listDocuments(
+        this.databaseId,
+        COLLECTIONS.TAGS,
+        [Query.limit(100)]
+      );
+
+      return response.documents.map((doc) => ({
+        id: doc.$id,
+        name: doc.name,
+        slug: doc.slug,
+        type: doc.type,
+        description: doc.description,
+      }));
+    } catch (error) {
+      console.error("Error fetching tags:", error);
+      return [];
+    }
+  }
+
+  // Bookings
+  async getUserBookings(userId: string): Promise<any[]> {
+    try {
+      const response = await this.databases.listDocuments(
+        this.databaseId,
         COLLECTIONS.BOOKINGS,
-        ID.unique(),
-        booking
+        [Query.equal("user", userId), Query.orderDesc("$createdAt")]
       );
-      return response as unknown as Booking;
+
+      return response.documents.map((doc) => ({
+        id: doc.$id,
+        userId: doc.user.$id,
+        packageId: doc.package.$id,
+        startDate: doc.startDate,
+        numberOfPeople: doc.numberOfPeople,
+        totalPrice: doc.totalPrice,
+        status: doc.status,
+        createdAt: doc.$createdAt,
+      }));
     } catch (error) {
-      console.error("Error creating booking:", error);
-      throw error;
+      console.error("Error fetching user bookings:", error);
+      return [];
     }
   }
 
-  // Mensagens
-  async getMessages(): Promise<any[]> {
+  async getBookingById(id: string): Promise<any | null> {
     try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.MESSAGES
+      const doc = await this.databases.getDocument(
+        this.databaseId,
+        COLLECTIONS.BOOKINGS,
+        id
       );
-      return response.documents;
+
+      return {
+        id: doc.$id,
+        userId: doc.user.$id,
+        packageId: doc.package.$id,
+        startDate: doc.startDate,
+        numberOfPeople: doc.numberOfPeople,
+        totalPrice: doc.totalPrice,
+        status: doc.status,
+        createdAt: doc.$createdAt,
+      };
     } catch (error) {
-      console.error("Error fetching messages:", error);
-      throw error;
+      console.error("Error fetching booking:", error);
+      return null;
+    }
+  }
+
+  async getTagsByType(type: string): Promise<any[]> {
+    try {
+      const response = await this.databases.listDocuments(
+        this.databaseId,
+        COLLECTIONS.TAGS,
+        [Query.equal("type", type)]
+      );
+
+      return response.documents.map((doc) => ({
+        id: doc.$id,
+        name: doc.name,
+        slug: doc.slug,
+        type: doc.type,
+        description: doc.description,
+      }));
+    } catch (error) {
+      console.error(`Error fetching tags by type ${type}:`, error);
+      return [];
     }
   }
 }
