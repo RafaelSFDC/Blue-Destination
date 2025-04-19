@@ -1,4 +1,4 @@
-import { Client, Account, Databases, Storage, Functions } from "appwrite";
+import { Client, Account, Databases, Storage } from "appwrite";
 
 export const createSessionClient = async (session?: string) => {
   const client = new Client();
@@ -21,15 +21,15 @@ export const createSessionClient = async (session?: string) => {
   };
 };
 
-// IDs das coleções (você precisará criar estas coleções no console do Appwrite)
+// IDs das coleções
 export const COLLECTIONS = {
-  USERS: process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID_USERS!,
-  DESTINATIONS: process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID_DESTINATIONS!,
-  PACKAGES: process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID_PACKAGES!,
-  BOOKINGS: process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID_BOOKINGS!,
-  TESTIMONIALS: process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID_TESTIMONIALS!,
-  MESSAGES: process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID_MESSAGES!,
-  TAGS: process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID_TAGS!,
-  ITINERARY: process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID_ITINERARY!,
+  USERS: process.env.NEXT_PUBLIC_COLLECTION_USERS!,
+  DESTINATIONS: process.env.NEXT_PUBLIC_COLLECTION_DESTINATIONS!,
+  PACKAGES: process.env.NEXT_PUBLIC_COLLECTION_PACKAGES!,
+  BOOKINGS: process.env.NEXT_PUBLIC_COLLECTION_BOOKINGS!,
+  TESTIMONIALS: process.env.NEXT_PUBLIC_COLLECTION_TESTIMONIALS!,
+  MESSAGES: process.env.NEXT_PUBLIC_COLLECTION_MESSAGES!,
+  TAGS: process.env.NEXT_PUBLIC_COLLECTION_TAGS!,
+  ITINERARY: process.env.NEXT_PUBLIC_COLLECTION_ITINERARY!,
   STORAGE: process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID!,
 } as const;
