@@ -1,13 +1,9 @@
-import { Client, Account, Databases, Storage, Functions } from "appwrite";
+import { Client, Account, Databases, Storage } from "node-appwrite";
 
-export const createSessionClient = async (session?: string) => {
+export const createAdminClient = async () => {
   const client = new Client();
   client.setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "");
   client.setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "");
-
-  if (session) {
-    client.setSession(session);
-  }
   return {
     get account() {
       return new Account(client);
@@ -20,7 +16,6 @@ export const createSessionClient = async (session?: string) => {
     },
   };
 };
-
 // IDs das coleções (você precisará criar estas coleções no console do Appwrite)
 export const COLLECTIONS = {
   USERS: process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID_USERS!,
