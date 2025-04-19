@@ -16,8 +16,11 @@ let packagesCollection: any;
 let bookingsCollection: any;
 let testimonialsCollection: any;
 let messagesCollection: any;
+let tagsCollection: any;
+let itineraryCollection: any;
 
-async function setupCollections() {
+// Função para criar todas as coleções primeiro
+async function createAllCollections(): Promise<boolean> {
   try {
     // Users Collection
     usersCollection = await databases.createCollection(
@@ -148,15 +151,7 @@ async function setupCollections() {
       true
     );
 
-    await databases.createStringAttribute(
-      DATABASE_ID,
-      destinationsCollection.$id,
-      "tags",
-      50,
-      true,
-      undefined,
-      true
-    );
+    // Removido o atributo de string "tags" pois será substituído por uma relação na função createRelationships
 
     // Packages Collection
     packagesCollection = await databases.createCollection(
@@ -203,15 +198,7 @@ async function setupCollections() {
       365
     );
 
-    await databases.createStringAttribute(
-      DATABASE_ID,
-      packagesCollection.$id,
-      "destinations",
-      36,
-      true,
-      undefined,
-      true
-    );
+    // Removido o atributo de string "destinations" pois será substituído por uma relação na função createRelationships
 
     await databases.createStringAttribute(
       DATABASE_ID,
@@ -221,15 +208,7 @@ async function setupCollections() {
       true
     );
 
-    await databases.createStringAttribute(
-      DATABASE_ID,
-      packagesCollection.$id,
-      "tags",
-      50,
-      true,
-      undefined,
-      true
-    );
+    // Removido o atributo de string "tags" pois será substituído por uma relação na função createRelationships
 
     // Bookings Collection
     bookingsCollection = await databases.createCollection(
@@ -242,21 +221,7 @@ async function setupCollections() {
     );
 
     // Criar atributos para Bookings
-    await databases.createStringAttribute(
-      DATABASE_ID,
-      bookingsCollection.$id,
-      "userId",
-      36,
-      true
-    );
-
-    await databases.createStringAttribute(
-      DATABASE_ID,
-      bookingsCollection.$id,
-      "packageId",
-      36,
-      true
-    );
+    // Relações serão criadas na função createRelationships
 
     await databases.createDatetimeAttribute(
       DATABASE_ID,
@@ -303,21 +268,7 @@ async function setupCollections() {
     );
 
     // Criar atributos para Testimonials
-    await databases.createStringAttribute(
-      DATABASE_ID,
-      testimonialsCollection.$id,
-      "userId",
-      36,
-      true
-    );
-
-    await databases.createStringAttribute(
-      DATABASE_ID,
-      testimonialsCollection.$id,
-      "packageId",
-      36,
-      true
-    );
+    // Relações serão criadas na função createRelationships
 
     await databases.createStringAttribute(
       DATABASE_ID,
@@ -354,13 +305,7 @@ async function setupCollections() {
     );
 
     // Criar atributos para Messages
-    await databases.createStringAttribute(
-      DATABASE_ID,
-      messagesCollection.$id,
-      "userId",
-      36,
-      true
-    );
+    // Relações serão criadas na função createRelationships
 
     await databases.createStringAttribute(
       DATABASE_ID,
@@ -395,7 +340,7 @@ async function setupCollections() {
     );
 
     // Itinerary Collection
-    const itineraryCollection = await databases.createCollection(
+    itineraryCollection = await databases.createCollection(
       DATABASE_ID,
       ID.unique(),
       "Itinerary",
@@ -404,27 +349,210 @@ async function setupCollections() {
       true
     );
 
-    await databases.createStringAttribute(DATABASE_ID, itineraryCollection.$id, "packageId", 36, true);
-    await databases.createIntegerAttribute(DATABASE_ID, itineraryCollection.$id, "day", true, 1, 365);
-    await databases.createStringAttribute(DATABASE_ID, itineraryCollection.$id, "title", 200, true);
-    await databases.createStringAttribute(DATABASE_ID, itineraryCollection.$id, "description", 5000, true);
-
-    // Criar índice para relacionamento
-    await databases.createIndex(
+    // Relações serão criadas na função createRelationships
+    await databases.createIntegerAttribute(
       DATABASE_ID,
       itineraryCollection.$id,
-      "package_day_index",
-      IndexType.Key,
-      ["packageId", "day"],
-      ["ASC", "ASC"]
+      "day",
+      true,
+      1,
+      365
+    );
+    await databases.createStringAttribute(
+      DATABASE_ID,
+      itineraryCollection.$id,
+      "title",
+      200,
+      true
+    );
+    await databases.createStringAttribute(
+      DATABASE_ID,
+      itineraryCollection.$id,
+      "description",
+      5000,
+      true
     );
 
-    // Criar índices
-    await createIndices();
+    // O índice para relacionamento será criado depois que a relação for estabelecida
 
-    console.log("Collections and attributes created successfully!");
+    // Tags Collection
+    tagsCollection = await databases.createCollection(
+      DATABASE_ID,
+      ID.unique(),
+      "Tags",
+      ['read("any")'],
+      false,
+      true
+    );
+
+    // Criar atributos para Tags
+    await databases.createStringAttribute(
+      DATABASE_ID,
+      tagsCollection.$id,
+      "name",
+      100,
+      true
+    );
+
+    await databases.createStringAttribute(
+      DATABASE_ID,
+      tagsCollection.$id,
+      "slug",
+      100,
+      true
+    );
+
+    await databases.createStringAttribute(
+      DATABASE_ID,
+      tagsCollection.$id,
+      "type",
+      20,
+      true
+    );
+
+    await databases.createStringAttribute(
+      DATABASE_ID,
+      tagsCollection.$id,
+      "description",
+      500,
+      false
+    );
+
+    // Criar índice para Tags
+    await databases.createIndex(
+      DATABASE_ID,
+      tagsCollection.$id,
+      "slug_index",
+      IndexType.Key,
+      ["slug"],
+      ["ASC"]
+    );
+
+    console.log("Coleções e atributos criados com sucesso!");
+    return true;
   } catch (error) {
     console.error("Error creating collections:", error);
+    return false;
+  }
+}
+
+// Função para criar as relações entre as coleções
+async function createRelationships() {
+  try {
+    console.log("Criando relação entre Destinations e Tags...");
+    await databases.createRelationshipAttribute(
+      DATABASE_ID,
+      destinationsCollection.$id,
+      tagsCollection.$id, // relatedCollectionId
+      "manyToMany", // type
+      false, // twoWay (opcional)
+      "tags" // key (opcional)
+      // Removendo twoWayKey e onDelete para simplificar
+    );
+
+    console.log("Criando relação entre Packages e Tags...");
+    await databases.createRelationshipAttribute(
+      DATABASE_ID,
+      packagesCollection.$id,
+      tagsCollection.$id, // relatedCollectionId
+      "manyToMany", // type
+      false, // twoWay (opcional)
+      "tags" // key (opcional)
+      // Removendo twoWayKey e onDelete para simplificar
+    );
+
+    console.log("Criando relação entre Packages e Destinations...");
+    await databases.createRelationshipAttribute(
+      DATABASE_ID,
+      packagesCollection.$id,
+      destinationsCollection.$id, // relatedCollectionId
+      "manyToMany", // type
+      false, // twoWay (opcional)
+      "destinations" // key (opcional)
+      // Removendo twoWayKey e onDelete para simplificar
+    );
+
+    console.log("Criando relação entre Bookings e Users...");
+    await databases.createRelationshipAttribute(
+      DATABASE_ID,
+      bookingsCollection.$id,
+      usersCollection.$id, // relatedCollectionId
+      "manyToOne", // type
+      false, // twoWay (opcional)
+      "user" // key (opcional)
+      // Removendo twoWayKey e onDelete para simplificar
+    );
+
+    console.log("Criando relação entre Bookings e Packages...");
+    await databases.createRelationshipAttribute(
+      DATABASE_ID,
+      bookingsCollection.$id,
+      packagesCollection.$id, // relatedCollectionId
+      "manyToOne", // type
+      false, // twoWay (opcional)
+      "package" // key (opcional)
+      // Removendo twoWayKey e onDelete para simplificar
+    );
+
+    console.log("Criando relação entre Testimonials e Users...");
+    await databases.createRelationshipAttribute(
+      DATABASE_ID,
+      testimonialsCollection.$id,
+      usersCollection.$id, // relatedCollectionId
+      "manyToOne", // type
+      false, // twoWay (opcional)
+      "user" // key (opcional)
+      // Removendo twoWayKey e onDelete para simplificar
+    );
+
+    console.log("Criando relação entre Testimonials e Packages...");
+    await databases.createRelationshipAttribute(
+      DATABASE_ID,
+      testimonialsCollection.$id,
+      packagesCollection.$id, // relatedCollectionId
+      "manyToOne", // type
+      false, // twoWay (opcional)
+      "package" // key (opcional)
+      // Removendo twoWayKey e onDelete para simplificar
+    );
+
+    console.log("Criando relação entre Testimonials e Destinations...");
+    await databases.createRelationshipAttribute(
+      DATABASE_ID,
+      testimonialsCollection.$id,
+      destinationsCollection.$id, // relatedCollectionId
+      "manyToOne", // type
+      false, // twoWay (opcional)
+      "destination" // key (opcional)
+      // Removendo twoWayKey e onDelete para simplificar
+    );
+
+    console.log("Criando relação entre Messages e Users...");
+    await databases.createRelationshipAttribute(
+      DATABASE_ID,
+      messagesCollection.$id,
+      usersCollection.$id, // relatedCollectionId
+      "manyToOne", // type
+      false, // twoWay (opcional)
+      "user" // key (opcional)
+      // Removendo twoWayKey e onDelete para simplificar
+    );
+
+    console.log("Criando relação entre Itinerary e Packages...");
+    await databases.createRelationshipAttribute(
+      DATABASE_ID,
+      itineraryCollection.$id,
+      packagesCollection.$id, // relatedCollectionId
+      "manyToOne", // type
+      false, // twoWay (opcional)
+      "package" // key (opcional)
+      // Removendo twoWayKey e onDelete para simplificar
+    );
+
+    console.log("Todas as relações foram criadas com sucesso!");
+  } catch (error) {
+    console.error("Erro ao criar relações:", error);
+    throw error;
   }
 }
 
@@ -469,15 +597,7 @@ async function createIndices() {
       ["ASC"]
     );
 
-    // Índices para Bookings
-    await databases.createIndex(
-      DATABASE_ID,
-      bookingsCollection.$id,
-      "user_package_index",
-      IndexType.Key,
-      ["userId", "packageId"],
-      ["ASC", "ASC"]
-    );
+    // Índices para Bookings - removido índice para atributos de relacionamento
 
     await databases.createIndex(
       DATABASE_ID,
@@ -488,14 +608,73 @@ async function createIndices() {
       ["ASC"]
     );
 
+    // Índices para Testimonials - removidos índices para atributos de relacionamento
+
+    // Índices para Messages - removidos índices para atributos de relacionamento
+
+    // Índices para Itinerary - removidos índices para atributos de relacionamento
+
+    // Índice para day
+    await databases.createIndex(
+      DATABASE_ID,
+      itineraryCollection.$id,
+      "day_index",
+      IndexType.Key,
+      ["day"],
+      ["ASC"]
+    );
+
+    // Adicionar índices adicionais para otimização
+    async function createAdditionalIndices() {
+      // Tags indices
+      await databases.createIndex(
+        DATABASE_ID,
+        tagsCollection.$id,
+        "type_index",
+        IndexType.Key,
+        ["type"],
+        ["ASC"]
+      );
+
+      console.log(
+        "Nota: Não é necessário criar índices para atributos de relacionamento,"
+      );
+      console.log(
+        "pois o Appwrite já cria automaticamente índices para esses atributos."
+      );
+    }
+
+    await createAdditionalIndices();
+
     console.log("Indices created successfully!");
   } catch (error) {
     console.error("Error creating indices:", error);
   }
 }
 
+// Função principal que coordena o processo de setup
+async function setupCollections() {
+  try {
+    console.log("Iniciando a criação das coleções...");
+    const collectionsCreated = await createAllCollections();
+
+    if (collectionsCreated) {
+      console.log("Criando relações entre coleções...");
+      await createRelationships();
+
+      console.log("Criando índices...");
+      await createIndices();
+
+      console.log("Setup concluído com sucesso!");
+    } else {
+      console.error(
+        "Não foi possível criar as coleções. Abortando o processo."
+      );
+    }
+  } catch (error) {
+    console.error("Erro durante o setup:", error);
+  }
+}
+
 // Executar o setup
 setupCollections();
-
-
-

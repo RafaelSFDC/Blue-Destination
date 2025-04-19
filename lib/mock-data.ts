@@ -1,85 +1,88 @@
 // Tipos
 export type Destination = {
-  id: string
-  name: string
-  location: string
-  description: string
-  price: number
-  rating: number
-  reviewCount: number
-  imageUrl: string
-  featured: boolean
-  popular?: boolean
-  tags: string[]
-  region?: string
-}
+  id: string;
+  name: string;
+  location: string;
+  description: string;
+  price: number;
+  rating: number;
+  reviewCount: number;
+  imageUrl: string;
+  featured: boolean;
+  popular?: boolean;
+  tags: string[]; // Mantido para compatibilidade com dados mock
+  tagIds?: string[]; // Adicionado para compatibilidade com o banco de dados (opcional para mock data)
+  region?: string;
+};
 
 export type Package = {
-  id: string
-  name: string
-  description: string
-  destinations: string[]
-  duration: number
-  price: number
-  discount?: number
-  imageUrl: string
-  featured: boolean
-  inclusions: string[] // This is already string[], but making it explicit
-  tags: string[]
+  id: string;
+  name: string;
+  description: string;
+  destinations: string[]; // Mantido para compatibilidade com dados mock
+  destinationIds?: string[]; // Adicionado para compatibilidade com o banco de dados (opcional para mock data)
+  duration: number;
+  price: number;
+  discount?: number;
+  imageUrl: string;
+  featured: boolean;
+  inclusions: string[]; // This is already string[], but making it explicit
+  tags: string[]; // Mantido para compatibilidade com dados mock
+  tagIds?: string[]; // Adicionado para compatibilidade com o banco de dados (opcional para mock data)
   itinerary: {
-    day: number
-    title: string
-    description: string
-  }[]
-}
+    day: number;
+    title: string;
+    description: string;
+  }[];
+};
 
 export type Testimonial = {
-  id: string
-  name: string
-  avatar: string
-  rating: number
-  comment: string
-  packageId: string
-  destinationId?: string
-  date: string
-  featured?: boolean
-}
+  id: string;
+  name: string;
+  avatar: string;
+  rating: number;
+  comment: string;
+  packageId: string;
+  destinationId?: string;
+  date: string;
+  featured?: boolean;
+};
 
 export type User = {
-  id: string
-  name: string
-  email: string
-  avatar?: string
-  role: "user" | "admin"
-  bookings: string[]
-}
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role: "user" | "admin";
+  bookings: string[];
+};
 
 export type Booking = {
-  id: string
-  userId: string
-  packageId: string
-  status: "pending" | "confirmed" | "cancelled" | "completed"
-  bookingDate: string
-  travelDate: string
-  travelers: number
-  totalPrice: number
-  paymentStatus: "pending" | "paid" | "refunded"
-}
+  id: string;
+  userId: string;
+  packageId: string;
+  status: "pending" | "confirmed" | "cancelled" | "completed";
+  bookingDate: string;
+  travelDate: string;
+  travelers: number;
+  totalPrice: number;
+  paymentStatus: "pending" | "paid" | "refunded";
+};
 
 export type SearchFilters = {
-  query?: string
-  destinationId?: string
-  minPrice?: number
-  maxPrice?: number
-  minDuration?: number
-  maxDuration?: number
-  ratings?: number[]
-  tags?: string[]
-  sortBy?: string
-  page?: number
-  limit?: number
-  travelers?: number
-}
+  query?: string;
+  destinationId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minDuration?: number;
+  maxDuration?: number;
+  ratings?: number[];
+  tags?: string[];
+  sortBy?: string;
+  page?: number;
+  limit?: number;
+  travelers?: number;
+};
 
 // Mock Destinations
 export const mockDestinations: Destination[] = [
@@ -129,7 +132,8 @@ export const mockDestinations: Destination[] = [
     id: "dest-004",
     name: "Machu Picchu",
     location: "Peru, América do Sul",
-    description: "Descubra as ruínas incas de Machu Picchu, uma das maravilhas do mundo moderno.",
+    description:
+      "Descubra as ruínas incas de Machu Picchu, uma das maravilhas do mundo moderno.",
     price: 2200,
     rating: 4.9,
     reviewCount: 145,
@@ -142,7 +146,8 @@ export const mockDestinations: Destination[] = [
     id: "dest-005",
     name: "Safari na Tanzânia",
     location: "Tanzânia, África",
-    description: "Experimente a emoção de um safari na Tanzânia, observando a vida selvagem em seu habitat natural.",
+    description:
+      "Experimente a emoção de um safari na Tanzânia, observando a vida selvagem em seu habitat natural.",
     price: 3800,
     rating: 4.8,
     reviewCount: 87,
@@ -193,14 +198,15 @@ export const mockDestinations: Destination[] = [
     tags: ["urbano", "cultura", "compras"],
     region: "América do Norte",
   },
-]
+];
 
 // Mock Packages
 export const mockPackages: Package[] = [
   {
     id: "pkg-001",
     name: "Paraísos Tropicais",
-    description: "Uma jornada inesquecível pelos mais belos paraísos tropicais do mundo.",
+    description:
+      "Uma jornada inesquecível pelos mais belos paraísos tropicais do mundo.",
     destinations: ["dest-001", "dest-007"],
     duration: 12,
     price: 7500,
@@ -214,58 +220,65 @@ export const mockPackages: Package[] = [
       "Café da manhã",
       "Traslados",
       "Passeios guiados",
-      "Seguro viagem"
+      "Seguro viagem",
     ],
     itinerary: [
       {
         day: 1,
         title: "Chegada",
-        description: "Recepção no aeroporto e traslado para o hotel."
+        description: "Recepção no aeroporto e traslado para o hotel.",
       },
       {
         day: 2,
         title: "Explorando a Cidade",
-        description: "Tour guiado pelos principais pontos turísticos."
+        description: "Tour guiado pelos principais pontos turísticos.",
       },
       {
         day: 3,
         title: "Dia Livre",
-        description: "Dia livre para atividades opcionais."
+        description: "Dia livre para atividades opcionais.",
       },
       {
         day: 4,
         title: "Jantar Romântico",
-        description: "Jantar especial à beira-mar com menu degustação de frutos do mar.",
+        description:
+          "Jantar especial à beira-mar com menu degustação de frutos do mar.",
       },
       {
         day: 5,
         title: "Último Dia nas Maldivas",
-        description: "Tempo livre pela manhã. À tarde, traslado para o aeroporto e voo para a Austrália.",
+        description:
+          "Tempo livre pela manhã. À tarde, traslado para o aeroporto e voo para a Austrália.",
       },
       {
         day: 6,
         title: "Chegada à Austrália",
-        description: "Chegada a Cairns e traslado para o hotel. Tempo livre para descansar.",
+        description:
+          "Chegada a Cairns e traslado para o hotel. Tempo livre para descansar.",
       },
       {
         day: 7,
         title: "Grande Barreira de Coral",
-        description: "Passeio de barco até a Grande Barreira de Coral com oportunidade de mergulho.",
+        description:
+          "Passeio de barco até a Grande Barreira de Coral com oportunidade de mergulho.",
       },
       {
         day: 8,
         title: "Floresta Tropical",
-        description: "Excursão à floresta tropical de Daintree, uma das mais antigas do mundo.",
+        description:
+          "Excursão à floresta tropical de Daintree, uma das mais antigas do mundo.",
       },
       {
         day: 9,
         title: "Dia Livre em Cairns",
-        description: "Dia livre para explorar a cidade ou fazer atividades opcionais.",
+        description:
+          "Dia livre para explorar a cidade ou fazer atividades opcionais.",
       },
       {
         day: 10,
         title: "Último Mergulho",
-        description: "Última oportunidade de mergulho na Grande Barreira de Coral.",
+        description:
+          "Última oportunidade de mergulho na Grande Barreira de Coral.",
       },
       {
         day: 11,
@@ -282,44 +295,57 @@ export const mockPackages: Package[] = [
   {
     id: "pkg-002",
     name: "Tesouros da Europa",
-    description: "Uma viagem cultural pelos mais belos destinos europeus, explorando história, arte e gastronomia.",
+    description:
+      "Uma viagem cultural pelos mais belos destinos europeus, explorando história, arte e gastronomia.",
     destinations: ["dest-003", "dest-006"],
     duration: 10,
     price: 5200,
     imageUrl: "/placeholder.svg?height=500&width=800",
     featured: true,
     tags: ["cultura", "histórico", "gastronomia"],
-    inclusions: ["Passagens aéreas", "Hospedagem 4 estrelas", "Café da manhã", "Traslados", "Passeios guiados"],
+    inclusions: [
+      "Passagens aéreas",
+      "Hospedagem 4 estrelas",
+      "Café da manhã",
+      "Traslados",
+      "Passeios guiados",
+    ],
     itinerary: [
       {
         day: 1,
         title: "Chegada a Santorini",
-        description: "Recepção no aeroporto e traslado para o hotel com vista para o Mar Egeu.",
+        description:
+          "Recepção no aeroporto e traslado para o hotel com vista para o Mar Egeu.",
       },
       {
         day: 2,
         title: "Tour por Oia",
-        description: "Visita à pitoresca vila de Oia, famosa por suas casas brancas e pôr do sol deslumbrante.",
+        description:
+          "Visita à pitoresca vila de Oia, famosa por suas casas brancas e pôr do sol deslumbrante.",
       },
       {
         day: 3,
         title: "Praias Vulcânicas",
-        description: "Passeio pelas praias vulcânicas de areia preta e vermelha de Santorini.",
+        description:
+          "Passeio pelas praias vulcânicas de areia preta e vermelha de Santorini.",
       },
       {
         day: 4,
         title: "Vinícolas Locais",
-        description: "Tour pelas vinícolas locais com degustação de vinhos produzidos na ilha.",
+        description:
+          "Tour pelas vinícolas locais com degustação de vinhos produzidos na ilha.",
       },
       {
         day: 5,
         title: "Partida para Veneza",
-        description: "Traslado para o aeroporto e voo para Veneza. Chegada e traslado para o hotel.",
+        description:
+          "Traslado para o aeroporto e voo para Veneza. Chegada e traslado para o hotel.",
       },
       {
         day: 6,
         title: "Praça São Marcos",
-        description: "Visita à Praça São Marcos, Basílica de São Marcos e Palácio Ducal.",
+        description:
+          "Visita à Praça São Marcos, Basílica de São Marcos e Palácio Ducal.",
       },
       {
         day: 7,
@@ -368,12 +394,14 @@ export const mockPackages: Package[] = [
       {
         day: 1,
         title: "Chegada a Tóquio",
-        description: "Recepção no aeroporto e traslado para o hotel. Breve passeio de orientação pelo bairro.",
+        description:
+          "Recepção no aeroporto e traslado para o hotel. Breve passeio de orientação pelo bairro.",
       },
       {
         day: 2,
         title: "Tóquio Tradicional",
-        description: "Visita ao Templo Senso-ji, Jardins do Palácio Imperial e Santuário Meiji.",
+        description:
+          "Visita ao Templo Senso-ji, Jardins do Palácio Imperial e Santuário Meiji.",
       },
       {
         day: 3,
@@ -384,17 +412,20 @@ export const mockPackages: Package[] = [
       {
         day: 4,
         title: "Excursão ao Monte Fuji",
-        description: "Viagem de um dia ao icônico Monte Fuji e região dos Cinco Lagos.",
+        description:
+          "Viagem de um dia ao icônico Monte Fuji e região dos Cinco Lagos.",
       },
       {
         day: 5,
         title: "Gastronomia Japonesa",
-        description: "Aula de culinária japonesa pela manhã e tour gastronômico à noite.",
+        description:
+          "Aula de culinária japonesa pela manhã e tour gastronômico à noite.",
       },
       {
         day: 6,
         title: "Akihabara e Odaiba",
-        description: "Visita ao distrito eletrônico de Akihabara e à ilha artificial de Odaiba.",
+        description:
+          "Visita ao distrito eletrônico de Akihabara e à ilha artificial de Odaiba.",
       },
       {
         day: 7,
@@ -431,37 +462,44 @@ export const mockPackages: Package[] = [
       {
         day: 1,
         title: "Chegada a Lima",
-        description: "Recepção no aeroporto e traslado para o hotel. Tempo livre para descansar.",
+        description:
+          "Recepção no aeroporto e traslado para o hotel. Tempo livre para descansar.",
       },
       {
         day: 2,
         title: "City Tour em Lima",
-        description: "Visita ao centro histórico de Lima, Catedral, Convento de São Francisco e bairro de Miraflores.",
+        description:
+          "Visita ao centro histórico de Lima, Catedral, Convento de São Francisco e bairro de Miraflores.",
       },
       {
         day: 3,
         title: "Voo para Cusco",
-        description: "Traslado para o aeroporto e voo para Cusco. Tarde livre para aclimatação à altitude.",
+        description:
+          "Traslado para o aeroporto e voo para Cusco. Tarde livre para aclimatação à altitude.",
       },
       {
         day: 4,
         title: "City Tour em Cusco",
-        description: "Visita às ruínas de Sacsayhuamán, Qenqo, Puca Pucara e Tambomachay.",
+        description:
+          "Visita às ruínas de Sacsayhuamán, Qenqo, Puca Pucara e Tambomachay.",
       },
       {
         day: 5,
         title: "Vale Sagrado",
-        description: "Excursão ao Vale Sagrado dos Incas, visitando Pisac e Ollantaytambo.",
+        description:
+          "Excursão ao Vale Sagrado dos Incas, visitando Pisac e Ollantaytambo.",
       },
       {
         day: 6,
         title: "Machu Picchu",
-        description: "Viagem de trem para Aguas Calientes e visita às ruínas de Machu Picchu.",
+        description:
+          "Viagem de trem para Aguas Calientes e visita às ruínas de Machu Picchu.",
       },
       {
         day: 7,
         title: "Segundo Dia em Machu Picchu",
-        description: "Segunda visita opcional a Machu Picchu ou tempo livre em Aguas Calientes.",
+        description:
+          "Segunda visita opcional a Machu Picchu ou tempo livre em Aguas Calientes.",
       },
       {
         day: 8,
@@ -478,7 +516,8 @@ export const mockPackages: Package[] = [
   {
     id: "pkg-005",
     name: "Explorando a África",
-    description: "Uma aventura inesquecível pelos parques nacionais e paisagens deslumbrantes da África.",
+    description:
+      "Uma aventura inesquecível pelos parques nacionais e paisagens deslumbrantes da África.",
     destinations: ["dest-005"],
     duration: 10,
     price: 4500,
@@ -498,47 +537,56 @@ export const mockPackages: Package[] = [
       {
         day: 1,
         title: "Chegada a Arusha",
-        description: "Recepção no aeroporto e traslado para o hotel. Briefing sobre o safari.",
+        description:
+          "Recepção no aeroporto e traslado para o hotel. Briefing sobre o safari.",
       },
       {
         day: 2,
         title: "Parque Nacional do Tarangire",
-        description: "Safari de dia inteiro no Parque Nacional do Tarangire, famoso por seus baobás e elefantes.",
+        description:
+          "Safari de dia inteiro no Parque Nacional do Tarangire, famoso por seus baobás e elefantes.",
       },
       {
         day: 3,
         title: "Cratera de Ngorongoro",
-        description: "Descida à Cratera de Ngorongoro, um dos mais impressionantes ecossistemas da África.",
+        description:
+          "Descida à Cratera de Ngorongoro, um dos mais impressionantes ecossistemas da África.",
       },
       {
         day: 4,
         title: "Serengeti (Norte)",
-        description: "Safari no norte do Serengeti, em busca dos Big Five e da Grande Migração.",
+        description:
+          "Safari no norte do Serengeti, em busca dos Big Five e da Grande Migração.",
       },
       {
         day: 5,
         title: "Serengeti (Central)",
-        description: "Exploração da região central do Serengeti, rica em vida selvagem.",
+        description:
+          "Exploração da região central do Serengeti, rica em vida selvagem.",
       },
       {
         day: 6,
         title: "Serengeti (Sul)",
-        description: "Safari na região sul do Serengeti, conhecida pelas planícies abertas.",
+        description:
+          "Safari na região sul do Serengeti, conhecida pelas planícies abertas.",
       },
       {
         day: 7,
         title: "Lago Manyara",
-        description: "Safari no Parque Nacional do Lago Manyara, famoso por seus leões que sobem em árvores.",
+        description:
+          "Safari no Parque Nacional do Lago Manyara, famoso por seus leões que sobem em árvores.",
       },
       {
         day: 8,
         title: "Visita a uma Vila Masai",
-        description: "Visita cultural a uma autêntica vila Masai para conhecer suas tradições.",
+        description:
+          "Visita cultural a uma autêntica vila Masai para conhecer suas tradições.",
       },
       {
         day: 9,
         title: "Dia de Descanso em Arusha",
-        description: "Dia livre para descansar ou fazer compras de artesanato local.",
+        description:
+          "Dia livre para descansar ou fazer compras de artesanato local.",
       },
       {
         day: 10,
@@ -550,7 +598,8 @@ export const mockPackages: Package[] = [
   {
     id: "pkg-006",
     name: "Descobrindo a Oceania",
-    description: "Uma viagem completa pela Austrália e Nova Zelândia, explorando cidades, praias e natureza.",
+    description:
+      "Uma viagem completa pela Austrália e Nova Zelândia, explorando cidades, praias e natureza.",
     destinations: ["dest-007"],
     duration: 14,
     price: 8900,
@@ -569,67 +618,80 @@ export const mockPackages: Package[] = [
       {
         day: 1,
         title: "Chegada a Sydney",
-        description: "Recepção no aeroporto e traslado para o hotel. Tempo livre para descansar.",
+        description:
+          "Recepção no aeroporto e traslado para o hotel. Tempo livre para descansar.",
       },
       {
         day: 2,
         title: "City Tour em Sydney",
-        description: "Visita à Opera House, Harbour Bridge, Bondi Beach e outros pontos turísticos.",
+        description:
+          "Visita à Opera House, Harbour Bridge, Bondi Beach e outros pontos turísticos.",
       },
       {
         day: 3,
         title: "Blue Mountains",
-        description: "Excursão às Blue Mountains, com vistas para o Three Sisters e Scenic World.",
+        description:
+          "Excursão às Blue Mountains, com vistas para o Three Sisters e Scenic World.",
       },
       {
         day: 4,
         title: "Voo para Cairns",
-        description: "Traslado para o aeroporto e voo para Cairns, porta de entrada para a Grande Barreira de Coral.",
+        description:
+          "Traslado para o aeroporto e voo para Cairns, porta de entrada para a Grande Barreira de Coral.",
       },
       {
         day: 5,
         title: "Grande Barreira de Coral",
-        description: "Passeio de barco até a Grande Barreira de Coral com oportunidade de mergulho e snorkeling.",
+        description:
+          "Passeio de barco até a Grande Barreira de Coral com oportunidade de mergulho e snorkeling.",
       },
       {
         day: 6,
         title: "Floresta Tropical de Daintree",
-        description: "Excursão à floresta tropical de Daintree e Cape Tribulation.",
+        description:
+          "Excursão à floresta tropical de Daintree e Cape Tribulation.",
       },
       {
         day: 7,
         title: "Voo para Auckland",
-        description: "Traslado para o aeroporto e voo para Auckland, Nova Zelândia.",
+        description:
+          "Traslado para o aeroporto e voo para Auckland, Nova Zelândia.",
       },
       {
         day: 8,
         title: "City Tour em Auckland",
-        description: "Visita aos principais pontos turísticos de Auckland, a Cidade das Velas.",
+        description:
+          "Visita aos principais pontos turísticos de Auckland, a Cidade das Velas.",
       },
       {
         day: 9,
         title: "Rotorua",
-        description: "Viagem para Rotorua, centro da cultura Maori e atividade geotérmica.",
+        description:
+          "Viagem para Rotorua, centro da cultura Maori e atividade geotérmica.",
       },
       {
         day: 10,
         title: "Cultura Maori",
-        description: "Experiência cultural Maori com hangi (jantar tradicional) e apresentação cultural.",
+        description:
+          "Experiência cultural Maori com hangi (jantar tradicional) e apresentação cultural.",
       },
       {
         day: 11,
         title: "Queenstown",
-        description: "Voo para Queenstown, capital dos esportes de aventura da Nova Zelândia.",
+        description:
+          "Voo para Queenstown, capital dos esportes de aventura da Nova Zelândia.",
       },
       {
         day: 12,
         title: "Milford Sound",
-        description: "Excursão ao fiorde de Milford Sound, uma das paisagens mais impressionantes do mundo.",
+        description:
+          "Excursão ao fiorde de Milford Sound, uma das paisagens mais impressionantes do mundo.",
       },
       {
         day: 13,
         title: "Dia Livre em Queenstown",
-        description: "Dia livre para atividades opcionais como bungee jumping, jet boat ou passeios de vinícolas.",
+        description:
+          "Dia livre para atividades opcionais como bungee jumping, jet boat ou passeios de vinícolas.",
       },
       {
         day: 14,
@@ -638,7 +700,7 @@ export const mockPackages: Package[] = [
       },
     ],
   },
-]
+];
 
 // Mock Testimonials
 export const mockTestimonials: Testimonial[] = [
@@ -711,7 +773,7 @@ export const mockTestimonials: Testimonial[] = [
     destinationId: "dest-007",
     date: "2023-04-10",
   },
-]
+];
 
 // Mock Users
 export const mockUsers: User[] = [
@@ -739,7 +801,7 @@ export const mockUsers: User[] = [
     role: "admin",
     bookings: [],
   },
-]
+];
 
 // Mock Bookings
 export const mockBookings: Booking[] = [
@@ -765,7 +827,4 @@ export const mockBookings: Booking[] = [
     totalPrice: 20800,
     paymentStatus: "pending",
   },
-]
-
-
-
+];

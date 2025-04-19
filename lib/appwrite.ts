@@ -21,6 +21,8 @@ export const COLLECTIONS = {
   BOOKINGS: "bookings",
   TESTIMONIALS: "testimonials",
   MESSAGES: "messages",
+  TAGS: "tags",
+  ITINERARY: "itinerary",
 } as const;
 
 // ID do banco de dados
