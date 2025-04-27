@@ -102,24 +102,14 @@ export interface Availability {
 export interface Booking {
   $id: string;
   user: User;
-  packages: Package;
+  package: Package;
   status: BookingStatus;
   bookingDate: string;
   travelDate: string;
   travelers: number;
   totalPrice: number;
-  payment: Payment;
+  payments: Payment[];
   Passengers?: Passengers[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Category {
-  $id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -144,6 +134,7 @@ export interface Destination {
     longitude: number;
   };
   testimonials?: Testimonial[];
+  packages?: Package[];
   createdAt: string;
   updatedAt: string;
 }
@@ -221,7 +212,7 @@ export interface Package {
   inclusions: Inclusion[];
   maxGuests?: number;
   excluded?: string[];
-  itineraries?: Itinerary[];
+  itinerarys?: Itinerary[];
   testimonials?: Testimonial[];
   bookings?: Booking[];
   availability?: Availability[];
@@ -250,20 +241,6 @@ export interface Payment {
   updatedAt: string;
 }
 
-export interface Review {
-  $id: string;
-  userId: string;
-  title: string;
-  content: string;
-  rating: number;
-  status: "pending" | "approved" | "rejected";
-  type: "destination" | "package";
-  itemId: string;
-  helpful: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface Tag {
   $id: string;
   name: string;
@@ -280,7 +257,7 @@ export interface Testimonial {
   $id: string;
   user: User;
   package?: Package;
-  destination?: Destination;
+  destinations?: Destination;
   rating: number;
   comment: string;
   date: string;
