@@ -161,7 +161,7 @@ async function createCollection(config: CollectionConfig): Promise<string> {
 
 async function updateEnvFile(collectionIds: Record<string, string>) {
   try {
-    const envPath = path.join(process.cwd(), ".env.local");
+    const envPath = path.join(process.cwd(), ".env");
     let envContent = fs.existsSync(envPath)
       ? fs.readFileSync(envPath, "utf8")
       : "";
