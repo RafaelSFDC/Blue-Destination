@@ -8,7 +8,13 @@ const seedScripts = [
   "02-seed-users.js",
   "03-seed-destinations.js",
   "04-seed-packages.js",
+  "08-seed-accommodations.js",
+  "09-seed-activities.js",
+  "10-seed-availability.js",
+  "11-seed-discounts.js",
+  "12-seed-meals.js",
   "05-seed-itineraries.js",
+  "13-seed-testimonials.js",
   "06-seed-testimonials.js",
   "07-seed-bookings.js",
 ];

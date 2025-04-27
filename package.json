@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "setup-collections": "node scripts/setup-basic-collections.js"
+    "setup-collections": "node scripts/setup-basic-collections.js",
+    "seed": "node scripts/seeds/run-all-seeds.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

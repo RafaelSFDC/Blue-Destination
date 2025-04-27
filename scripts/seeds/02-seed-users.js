@@ -18,14 +18,14 @@ async function createAddresses() {
   }
 
   console.log(`Creating ${NUM_USERS} addresses...`);
-  
+
   // Verifica se já existem endereços
   const addressExists = await documentExists(ADDRESSES_COLLECTION_ID, 'street', faker.location.street());
   if (addressExists) {
     console.log('Addresses already exist, skipping...');
     return [];
   }
-  
+
   // Prepara os dados para inserção
   const addressesData = Array.from({ length: NUM_USERS }, () => ({
     street: faker.location.street(),
@@ -39,11 +39,11 @@ async function createAddresses() {
     createdAt: generateISODate(),
     updatedAt: generateISODate()
   }));
-  
+
   // Cria os endereços
   const addressIds = await createDocuments(ADDRESSES_COLLECTION_ID, addressesData);
   console.log(`Created ${addressIds.length} addresses successfully`);
-  
+
   return addressIds;
 }
 
@@ -55,20 +55,20 @@ async function createUserPreferences() {
   }
 
   console.log(`Creating ${NUM_USERS} user preferences...`);
-  
+
   // Verifica se já existem preferências
   const preferencesExist = await documentExists(USER_PREFERENCES_COLLECTION_ID, 'newsletter', true);
   if (preferencesExist) {
     console.log('User preferences already exist, skipping...');
     return [];
   }
-  
+
   // Prepara os dados para inserção
   const preferencesData = Array.from({ length: NUM_USERS }, () => {
     const travelStyles = ['Aventura', 'Relaxamento', 'Cultural', 'Gastronômico', 'Ecoturismo'];
     const destinations = ['Europa', 'Ásia', 'América do Norte', 'América do Sul', 'África', 'Oceania'];
     const dietaryRestrictions = ['Vegetariano', 'Vegano', 'Sem Glúten', 'Sem Lactose', 'Kosher', 'Halal'];
-    
+
     return {
       newsletter: faker.datatype.boolean(),
       notifications: JSON.stringify({
@@ -86,11 +86,11 @@ async function createUserPreferences() {
       updatedAt: generateISODate()
     };
   });
-  
+
   // Cria as preferências
   const preferenceIds = await createDocuments(USER_PREFERENCES_COLLECTION_ID, preferencesData);
   console.log(`Created ${preferenceIds.length} user preferences successfully`);
-  
+
   return preferenceIds;
 }
 
@@ -102,25 +102,24 @@ async function seedUsers() {
   }
 
   console.log(`Creating ${NUM_USERS} users...`);
-  
+
   // Verifica se já existem usuários
   const userExists = await documentExists(USERS_COLLECTION_ID, 'email', 'admin@example.com');
   if (userExists) {
     console.log('Users already exist, skipping...');
     return;
   }
-  
+
   // Cria endereços e preferências
   const addressIds = await createAddresses();
   const preferenceIds = await createUserPreferences();
-  
+
   // Prepara os dados para inserção
   const usersData = [
     // Usuário admin
     {
       name: 'Admin User',
       email: 'admin@example.com',
-      role: 'admin',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
       phone: '+1234567890',
       address: addressIds[0] || null,
@@ -134,11 +133,10 @@ async function seedUsers() {
       const lastName = faker.person.lastName();
       const name = `${firstName} ${lastName}`;
       const email = faker.internet.email({ firstName, lastName }).toLowerCase();
-      
+
       return {
         name,
         email,
-        role: 'user',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
         phone: faker.phone.number(),
         address: addressIds[i + 1] || null,
@@ -148,7 +146,7 @@ async function seedUsers() {
       };
     })
   ];
-  
+
   // Cria os usuários
   const userIds = await createDocuments(USERS_COLLECTION_ID, usersData);
   console.log(`Created ${userIds.length} users successfully`);
