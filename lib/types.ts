@@ -1,74 +1,54 @@
 //================================================== TYPE DEFINITIONS ==================================================//
 
 // Enums para melhor type-safety
-export enum UserRole {
-  USER = "user",
-  ADMIN = "admin",
-}
-
 export enum BookingStatus {
-  PENDING = "pending",
-  CONFIRMED = "confirmed",
   CANCELLED = "cancelled",
   COMPLETED = "completed",
-}
-
-export enum PaymentStatus {
+  CONFIRMED = "confirmed",
   PENDING = "pending",
-  PAID = "paid",
-  REFUNDED = "refunded",
-  FAILED = "failed", // Novo status
 }
 
 export enum MessageStatus {
-  UNREAD = "unread",
-  READ = "read",
   ARCHIVED = "archived",
   DELETED = "deleted", // Novo status
+  READ = "read",
+  UNREAD = "unread",
+}
+
+export enum PaymentStatus {
+  FAILED = "failed", // Novo status
+  PAID = "paid",
+  PENDING = "pending",
+  REFUNDED = "refunded",
+}
+
+export enum UserRole {
+  ADMIN = "admin",
+  USER = "user",
 }
 
 export interface SearchFilters {
-  query?: string;
-  destinationId?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  minDuration?: number;
-  maxDuration?: number;
-  ratings?: number[];
-  tags?: Tag[];
-  tagIds?: string[];
-  sortBy?: string;
-  page?: number;
-  limit?: number;
-  travelers?: number;
   dateRange?: {
     // Adicionado: filtro por data
     start: string;
     end: string;
   };
+  destinationId?: string;
+  limit?: number;
+  maxDuration?: number;
+  maxPrice?: number;
+  minDuration?: number;
+  minPrice?: number;
+  page?: number;
+  query?: string;
+  ratings?: number[];
+  sortBy?: string;
+  tagIds?: string[];
+  tags?: Tag[];
+  travelers?: number;
 }
 
 //================================================== COLLECTION MODELS ==================================================//
-
-export interface Tag {
-  $id: string;
-  name: string;
-  slug: string;
-  type: "destination" | "package";
-  description?: string;
-  color?: string; // Adicionado: para estilização
-  icon?: string; // Adicionado: para UI
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Meals {
-  breakfast: boolean;
-  lunch: boolean;
-  dinner: boolean;
-  createAt: string;
-  updatedAt: string;
-}
 
 export interface Accommodation {
   type: string;
@@ -78,18 +58,20 @@ export interface Accommodation {
   updatedAt: string;
 }
 
-export interface User {
+export interface Activity {
   $id: string;
   name: string;
-  email: string;
-  role: UserRole;
-  avatar: string | null;
-  phone?: string; // Adicionado: contato
-  address?: Address; // Adicionado: endereço
-  favorites?: Favorite[];
+  description: string;
+  location: string;
+  duration: number;
+  price: number;
+  rating: number;
+  reviewCount: number;
+  imageUrl: string;
+  featured: boolean;
+  tags: Tag[];
   createdAt: string;
   updatedAt: string;
-  preferences?: UserPreferences; // Adicionado: preferências
 }
 
 // Nova interface para endereço
@@ -107,17 +89,37 @@ export interface Address {
   updatedAt: string;
 }
 
-// Nova interface para preferências do usuário
-export interface UserPreferences {
+export interface Availability {
   $id: string;
-  newsletter: boolean;
-  notifications: {
-    email: boolean;
-    push: boolean;
-    sms: boolean;
-  };
-  currency: string;
-  language: string;
+  startDate: string;
+  endDate: string;
+  slots: number;
+  status: "available" | "unavailable";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Booking {
+  $id: string;
+  user: User;
+  packages: Package;
+  status: BookingStatus;
+  bookingDate: string;
+  travelDate: string;
+  travelers: number;
+  totalPrice: number;
+  payment: Payment;
+  Passengers?: Passengers[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Category {
+  $id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -141,14 +143,6 @@ export interface Destination {
     latitude: number;
     longitude: number;
   };
-  weather?: {
-    // Adicionado: informações do clima
-    bestTime: string;
-    temperature: {
-      min: number;
-      max: number;
-    };
-  };
   testimonials?: Testimonial[];
   createdAt: string;
   updatedAt: string;
@@ -164,6 +158,14 @@ export interface Discounts {
   updatedAt: string;
 }
 
+export interface Favorite {
+  $id: string;
+  type: "destination" | "package";
+  itemId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Inclusion {
   $id: string;
   name: string;
@@ -172,12 +174,34 @@ export interface Inclusion {
   updatedAt: string;
 }
 
-export interface Availability {
+export interface Itinerary {
   $id: string;
-  startDate: string;
-  endDate: string;
-  slots: number;
-  status: "available" | "unavailable";
+  package: Package;
+  day: number;
+  title: string;
+  description: string;
+  activities?: Activity[]; // Adicionado: atividades
+  meals?: Meals; // Adicionado: refeições
+  accommodation?: Accommodation; // Adicionado: hospedagem
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Meals {
+  breakfast: boolean;
+  lunch: boolean;
+  dinner: boolean;
+  createAt: string;
+  updatedAt: string;
+}
+
+export interface Notification {
+  $id: string;
+  title: string;
+  message: string;
+  type: "info" | "success" | "warning" | "error";
+  read: boolean;
+  userId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -192,7 +216,7 @@ export interface Package {
   duration: number;
   destinations: Destination[];
   featured: boolean;
-  discount?: Discounts;
+  discounts?: Discounts[];
   tags: Tag[];
   inclusions: Inclusion[];
   maxGuests?: number;
@@ -206,31 +230,48 @@ export interface Package {
   updatedAt: string;
 }
 
-export interface Activity {
+export interface Passengers {
   $id: string;
   name: string;
-  description: string;
-  location: string;
-  duration: number;
-  price: number;
-  rating: number;
-  reviewCount: number;
-  imageUrl: string;
-  featured: boolean;
-  tags: Tag[];
+  document: string;
+  birthDate: string;
+  specialNeeds?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Itinerary {
+export interface Payment {
   $id: string;
-  package: Package;
-  day: number;
+  booking: Booking;
+  amount: number;
+  method: string;
+  status: PaymentStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Review {
+  $id: string;
+  userId: string;
   title: string;
-  description: string;
-  activities?: Activity[]; // Adicionado: atividades
-  meals?: Meals; // Adicionado: refeições
-  accommodation?: Accommodation; // Adicionado: hospedagem
+  content: string;
+  rating: number;
+  status: "pending" | "approved" | "rejected";
+  type: "destination" | "package";
+  itemId: string;
+  helpful: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Tag {
+  $id: string;
+  name: string;
+  slug: string;
+  type: "destination" | "package";
+  description?: string;
+  color?: string; // Adicionado: para estilização
+  icon?: string; // Adicionado: para UI
   createdAt: string;
   updatedAt: string;
 }
@@ -251,70 +292,34 @@ export interface Testimonial {
   updatedAt: string;
 }
 
-export interface Payment {
-  $id: string;
-  booking: Booking;
-  amount: number;
-  method: string;
-  status: PaymentStatus;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Passengers {
+export interface User {
   $id: string;
   name: string;
-  document: string;
-  birthDate: string;
-  specialNeeds?: string;
+  email: string;
+  role: UserRole;
+  avatar: string | null;
+  phone?: string; // Adicionado: contato
+  addresses?: Address[]; // Adicionado: endereço
+  favorites?: Favorite[];
+  bookings: Booking[];
+  notifications?: Notification[];
+  testimonials?: Testimonial[];
   createdAt: string;
   updatedAt: string;
+  preferences?: UserPreferences; // Adicionado: preferências
 }
 
-export interface Booking {
+// Nova interface para preferências do usuário
+export interface UserPreferences {
   $id: string;
-  user: User;
-  packages: Package;
-  status: BookingStatus;
-  bookingDate: string;
-  travelDate: string;
-  travelers: number;
-  totalPrice: number;
-  payment: Payment;
-  Passengers?: Passengers[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Notification {
-  $id: string;
-  title: string;
-  message: string;
-  type: "info" | "success" | "warning" | "error";
-  read: boolean;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Favorite {
-  $id: string;
-  type: "destination" | "package";
-  itemId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Review {
-  $id: string;
-  userId: string;
-  title: string;
-  content: string;
-  rating: number;
-  status: "pending" | "approved" | "rejected";
-  type: "destination" | "package";
-  itemId: string;
-  helpful: number;
+  newsletter: boolean;
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+  };
+  currency: string;
+  language: string;
   createdAt: string;
   updatedAt: string;
 }
