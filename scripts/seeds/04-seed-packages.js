@@ -93,16 +93,18 @@ async function createDiscounts() {
   
   // Prepara os dados para inserção
   const discountsData = Array.from({ length: 10 }, () => {
-    const isPercentage = faker.datatype.boolean();
+    // Alterna entre os dois tipos permitidos: 'fixed' e 'percentage'
+    const type = faker.helpers.arrayElement(['fixed', 'percentage']);
     const startDate = faker.date.future({ years: 0.5 });
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + faker.number.int({ min: 30, max: 90 }));
     
     return {
-      type: isPercentage ? 'percentage' : 'fixed',
-      value: isPercentage 
-        ? faker.number.int({ min: 5, max: 30 }) 
-        : faker.number.int({ min: 50, max: 500 }),
+      type,
+      // Ajusta os valores baseado no tipo
+      value: type === 'percentage' 
+        ? faker.number.int({ min: 5, max: 30 }) // Percentual entre 5% e 30%
+        : faker.number.int({ min: 50, max: 500 }), // Valor fixo entre 50 e 500
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       createdAt: generateISODate(),
@@ -339,3 +341,5 @@ async function seedPackages() {
 seedPackages().catch(error => {
   console.error('Error seeding packages:', error);
 });
+
+
