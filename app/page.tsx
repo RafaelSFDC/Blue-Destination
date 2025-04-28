@@ -26,7 +26,7 @@ export default async function Home() {
       <section className="relative flex min-h-[600px] items-center justify-center bg-gray-900 py-12 text-white">
         <div className="absolute inset-0 z-0">
           <Image
-            src="/placeholder.svg?height=1080&width=1920"
+            src="/banner.webp"
             alt="Hero Background"
             fill
             className="object-cover opacity-40"
