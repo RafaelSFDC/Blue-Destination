@@ -5,18 +5,17 @@ import { Button } from "@/components/ui/button";
 import { SearchForm } from "@/components/search-form";
 import { DestinationCard } from "@/components/destination-card";
 import { PackageCard } from "@/components/package-card";
-import { TestimonialCard } from "@/components/testimonial-card";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { getFeaturedDestinations } from "@/lib/actions";
-import { getRecentTestimonials } from "@/actions/tertimonials";
 import TestimonialsCarousel from "@/components/testimonials-carousel";
-import { getFeaturedPackages } from "@/actions/packages";
 import { Package } from "@/lib/types";
+import { getFeaturedDestinations } from "@/actions/destinations";
+import { getFeaturedPackages } from "@/actions/packages";
+import { getRecentTestimonials } from "@/actions/tertimonials";
 
 export default async function Home() {
-  const featuredDestinations = await getFeaturedDestinations();
-  const featuredPackages = await getFeaturedPackages();
+  const featuredDestinations = await getFeaturedDestinations({ limit: 6 });
+  const featuredPackages = await getFeaturedPackages({ limit: 6 });
   const testimonials = await getRecentTestimonials();
 
   return (
@@ -156,7 +155,10 @@ export default async function Home() {
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {featuredDestinations.map((destination) => (
-              <DestinationCard key={destination.$id} destination={destination} />
+              <DestinationCard
+                key={destination.$id}
+                destination={destination}
+              />
             ))}
           </div>
 
@@ -182,7 +184,7 @@ export default async function Home() {
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredPackages.map((pkg : Package) => (
+            {featuredPackages.map((pkg: Package) => (
               <PackageCard key={pkg.$id} package={pkg} />
             ))}
           </div>
