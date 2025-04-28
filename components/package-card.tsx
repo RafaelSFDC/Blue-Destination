@@ -4,9 +4,9 @@ import Image from "next/image"
 import Link from "next/link"
 import { Clock, Users } from "lucide-react"
 import { formatCurrency, calculateDiscountedPrice } from "@/lib/utils"
-import type { Package } from "@/lib/mock-data"
 import { Badge } from "@/components/ui/badge"
 import { FavoriteButton } from "@/components/favorite-button"
+import { Package } from "@/lib/types"
 
 interface PackageCardProps {
   package: Package
@@ -14,13 +14,17 @@ interface PackageCardProps {
 }
 
 export function PackageCard({ package: pkg, className }: PackageCardProps) {
-  const discountedPrice = calculateDiscountedPrice(pkg.price, pkg.discount)
+  const discountedPrice = pkg.discounts?.length 
+    ? pkg.discounts[0].type === 'percentage'
+      ? calculateDiscountedPrice(pkg.price, pkg.discounts[0].value)
+      : pkg.price - pkg.discounts[0].value
+    : pkg.price
 
   return (
     <div
       className={`group relative overflow-hidden rounded-lg border bg-white shadow-sm transition-all hover:shadow-md ${className || ""}`}
     >
-      <Link href={`/packages/${pkg.id}`} className="block">
+      <Link href={`/packages/${pkg.$id}`} className="block">
         <div className="relative h-48 w-full overflow-hidden">
           <Image
             src={pkg.imageUrl || "/placeholder.svg?height=400&width=600"}
@@ -31,9 +35,9 @@ export function PackageCard({ package: pkg, className }: PackageCardProps) {
           {pkg.featured && (
             <div className="absolute left-0 top-0 bg-primary px-2 py-1 text-xs font-medium text-white">Destaque</div>
           )}
-          {pkg.discount && (
+          {pkg.discounts?.length && (
             <div className="absolute left-0 bottom-0 bg-red-500 px-2 py-1 text-xs font-medium text-white">
-              {pkg.discount}% OFF
+              {pkg.discounts[0].type === 'percentage' ? `${pkg.discounts[0].value}% OFF` : `${formatCurrency(pkg.discounts[0].value)} OFF`}
             </div>
           )}
         </div>
@@ -52,7 +56,7 @@ export function PackageCard({ package: pkg, className }: PackageCardProps) {
           <p className="mb-3 line-clamp-2 text-sm text-muted-foreground">{pkg.description}</p>
           <div className="flex items-center justify-between">
             <div>
-              {pkg.discount ? (
+              {pkg.discounts?.length ? (
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-bold text-primary">{formatCurrency(discountedPrice)}</span>
                   <span className="text-sm text-muted-foreground line-through">{formatCurrency(pkg.price)}</span>
@@ -69,7 +73,7 @@ export function PackageCard({ package: pkg, className }: PackageCardProps) {
         </div>
       </Link>
       <div className="absolute right-2 top-2 z-10">
-        <FavoriteButton id={pkg.id} type="package" />
+        <FavoriteButton id={pkg.$id} type="package" />
       </div>
     </div>
   )

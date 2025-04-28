@@ -8,17 +8,11 @@ import { PackageCard } from "@/components/package-card";
 import { TestimonialCard } from "@/components/testimonial-card";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { getFeaturedDestinations, getFeaturedPackages } from "@/lib/actions";
+import { getFeaturedDestinations } from "@/lib/actions";
 import { getRecentTestimonials } from "@/actions/tertimonials";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
-} from "@/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
 import TestimonialsCarousel from "@/components/testimonials-carousel";
+import { getFeaturedPackages } from "@/actions/packages";
+import { Package } from "@/lib/types";
 
 export default async function Home() {
   const featuredDestinations = await getFeaturedDestinations();
@@ -162,7 +156,7 @@ export default async function Home() {
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {featuredDestinations.map((destination) => (
-              <DestinationCard key={destination.id} destination={destination} />
+              <DestinationCard key={destination.$id} destination={destination} />
             ))}
           </div>
 
@@ -188,8 +182,8 @@ export default async function Home() {
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredPackages.map((pkg) => (
-              <PackageCard key={pkg.id} package={pkg} />
+            {featuredPackages.map((pkg : Package) => (
+              <PackageCard key={pkg.$id} package={pkg} />
             ))}
           </div>
 

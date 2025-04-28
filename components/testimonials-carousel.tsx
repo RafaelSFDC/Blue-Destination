@@ -25,7 +25,7 @@ function TestimonialsCarousel({
         }}
         plugins={[
           Autoplay({
-            delay: 3000, // 4 segundos por slide
+            delay: 3000, // 3 segundos por slide
             stopOnInteraction: false, // não para ao interagir
             stopOnMouseEnter: true, // para quando o mouse está em cima
           }),
@@ -35,7 +35,7 @@ function TestimonialsCarousel({
         <CarouselContent className="-ml-2 md:-ml-4">
           {testimonials.map((testimonial) => (
             <CarouselItem
-              key={testimonial.$id}
+              key={testimonial.$id + testimonial.user.$id}
               className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3"
             >
               <TestimonialCard testimonial={testimonial} />

@@ -18,9 +18,6 @@ export const createSessionClient = async (session?: string) => {
     get storage() {
       return new Storage(client);
     },
-    get query() {
-      return client.query;
-    },
   };
 };
 
