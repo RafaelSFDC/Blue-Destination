@@ -1,6 +1,5 @@
 'use client'
 
-import { useQuery } from "@tanstack/react-query";
 import { PackageCard } from "@/components/package-card";
 import { Package } from "@/lib/types";
 import { usePackages } from "@/querys/usePackages";
