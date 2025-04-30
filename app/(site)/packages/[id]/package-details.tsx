@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/ui/star-rating";
 import { TestimonialCard } from "@/components/testimonial-card";
+import { BookingForm } from "@/components/booking-form";
 import { formatCurrency, calculateDiscountedPrice } from "@/lib/utils";
 import { Package } from "@/lib/types";
 import { RelatedPackages } from "./related-packages";
@@ -199,31 +200,15 @@ export function PackageDetails({ packageItem }: { packageItem: Package }) {
           </div>
 
           <div>
-            <div className="sticky top-24 rounded-lg border p-6 shadow-sm">
-              <h3 className="mb-4 text-xl font-bold">Reserve este pacote</h3>
-              <div className="mb-4 space-y-2">
-                <div className="flex justify-between">
-                  <span>Preço por pessoa</span>
-                  <span className="font-medium">
-                    {formatCurrency(packageItem.price)}
-                  </span>
-                </div>
-                {packageItem.discounts && packageItem.discounts.length > 1 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Desconto</span>
-                    <span>
-                      {packageItem.discounts[0].type === "percentage"
-                        ? `-${packageItem.discounts[0].value}%`
-                        : `-${formatCurrency(packageItem.discounts[0].value)}`}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between border-t pt-2 text-lg font-bold">
-                  <span>Total</span>
-                  <span>{formatCurrency(discountedPrice)}</span>
-                </div>
-              </div>
-              <Button className="w-full">Reservar agora</Button>
+            <div className="sticky top-24">
+              {/* Importar o componente BookingForm */}
+              <BookingForm
+                packageId={packageItem.$id}
+                packageName={packageItem.name}
+                price={discountedPrice}
+                minDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)} // 7 dias a partir de hoje
+                maxDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)} // 1 ano a partir de hoje
+              />
               <p className="mt-2 text-center text-sm text-muted-foreground">
                 Cancelamento gratuito até 48h antes
               </p>
