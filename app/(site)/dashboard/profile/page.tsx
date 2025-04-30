@@ -1,125 +1,297 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Camera, Loader2, Save, Lock, Bell, Globe, Trash2 } from "lucide-react";
+import { useUser } from "@/querys/useUser";
+import {
+  updateUserProfile,
+  deleteUserAccount,
+  logoutUser,
+} from "@/actions/auth";
+import { uploadImage, updateProfileImage } from "@/actions/storage";
 
-import { useState } from "react"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/components/ui/use-toast"
-import { useSnapshot } from "valtio"
-import { state, actions } from "@/lib/store"
-import { Camera, Loader2, Save, Lock, Bell, Globe, Trash2 } from "lucide-react"
+// Definindo a interface para o estado do formulário
+interface ProfileFormData {
+  name: string;
+  email: string;
+  phone: string;
+  // Campos de endereço (relacionados a user.addresses[0])
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  // Preferências do usuário
+  preferences: {
+    newsletter: boolean;
+    notifications: {
+      email: boolean;
+      push: boolean;
+      sms: boolean;
+    };
+    currency: string;
+    language: string;
+  };
+}
 
 export default function ProfilePage() {
-  const router = useRouter()
-  const snap = useSnapshot(state)
-  const { toast } = useToast()
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const { data: user, refetch } = useUser();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [profileData, setProfileData] = useState({
-    name: snap.auth.user?.name || "",
-    email: snap.auth.user?.email || "",
-    phone: "+55 (11) 98765-4321",
-    bio: "Viajante apaixonado, sempre em busca de novas aventuras e experiências pelo mundo.",
-    address: "Av. Paulista, 1000, São Paulo - SP",
-    city: "São Paulo",
-    state: "SP",
-    zipCode: "01310-100",
+  // Referência para o input de arquivo
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Estado para armazenar os dados do formulário
+  const [profileData, setProfileData] = useState<ProfileFormData>({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
     country: "Brasil",
-    language: "pt-BR",
-    currency: "BRL",
-    notifications: {
-      email: true,
-      push: true,
-      sms: false,
-      promotions: true,
-      newsletter: true,
-      tripReminders: true,
+    preferences: {
+      newsletter: false,
+      notifications: {
+        email: true,
+        push: true,
+        sms: false,
+      },
+      currency: "BRL",
+      language: "pt-BR",
     },
-  })
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setProfileData((prev) => ({ ...prev, [name]: value }))
-  }
+  // Atualizar o estado quando os dados do usuário estiverem disponíveis
+  useEffect(() => {
+    if (user) {
+      // Obter o primeiro endereço do usuário, se existir
+      const primaryAddress =
+        user.addresses && user.addresses.length > 0 ? user.addresses[0] : null;
 
-  const handleNotificationChange = (key: string, checked: boolean) => {
+      setProfileData({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        // Usar os dados do endereço principal, se disponível
+        address: primaryAddress?.street || "",
+        city: primaryAddress?.city || "",
+        state: primaryAddress?.state || "",
+        zipCode: primaryAddress?.zipCode || "",
+        country: primaryAddress?.country || "Brasil",
+        preferences: {
+          newsletter: user.preferences?.newsletter || false,
+          notifications: {
+            email: user.preferences?.notifications?.email || true,
+            push: user.preferences?.notifications?.push || true,
+            sms: user.preferences?.notifications?.sms || false,
+          },
+          currency: user.preferences?.currency || "BRL",
+          language: user.preferences?.language || "pt-BR",
+        },
+      });
+    }
+  }, [user]);
+
+  // Função para lidar com o upload de imagem
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    try {
+      setUploadingImage(true);
+
+      // Fazer upload da imagem
+      const imageUrl = await uploadImage(file);
+
+      // Atualizar a imagem de perfil do usuário
+      await updateProfileImage(user.$id, imageUrl);
+
+      // Atualizar os dados do usuário
+      await refetch();
+
+      toast.success("Imagem atualizada", {
+        description: "Sua foto de perfil foi atualizada com sucesso.",
+      });
+    } catch (error) {
+      toast.error("Erro ao atualizar imagem", {
+        description: "Ocorreu um erro ao atualizar sua foto de perfil.",
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Função para atualizar os dados do formulário
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+
+    // Atualizar o estado com base no nome do campo
     setProfileData((prev) => ({
       ...prev,
-      notifications: {
-        ...prev.notifications,
-        [key]: checked,
-      },
-    }))
-  }
+      [name]: value,
+    }));
+  };
 
+  // Função para atualizar as preferências de notificação
+  const handleNotificationChange = (key: string, checked: boolean) => {
+    setProfileData((prev) => {
+      if (key === "newsletter") {
+        return {
+          ...prev,
+          preferences: {
+            ...prev.preferences,
+            newsletter: checked,
+          },
+        };
+      } else if (key === "email" || key === "push" || key === "sms") {
+        return {
+          ...prev,
+          preferences: {
+            ...prev.preferences,
+            notifications: {
+              ...prev.preferences.notifications,
+              [key]: checked,
+            },
+          },
+        };
+      }
+      return prev;
+    });
+  };
+
+  // Função para salvar o perfil
   const handleSaveProfile = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
 
-    // Simulação de salvamento
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      if (!user) return;
 
-    // Atualizar o nome do usuário no estado global
-    if (snap.auth.user) {
-      actions.login({
-        ...snap.auth.user,
+      // Preparar o objeto de endereço
+      const addressData = {
+        street: profileData.address,
+        city: profileData.city,
+        state: profileData.state,
+        zipCode: profileData.zipCode,
+        country: profileData.country,
+      };
+
+      // Criar um array de endereços
+      const addresses =
+        user.addresses && user.addresses.length > 0
+          ? [
+              // Atualizar o primeiro endereço
+              { ...user.addresses[0], ...addressData },
+            ]
+          : [addressData]; // Criar um novo endereço se não existir
+
+      // Atualizar o perfil do usuário
+      await updateUserProfile(user.$id, {
         name: profileData.name,
         email: profileData.email,
-      })
+        phone: profileData.phone,
+        // Converter para any para evitar problemas de tipo
+        addresses: addresses as any,
+        preferences: {
+          newsletter: profileData.preferences.newsletter,
+          notifications: {
+            email: profileData.preferences.notifications.email,
+            push: profileData.preferences.notifications.push,
+            sms: profileData.preferences.notifications.sms,
+          },
+          currency: profileData.preferences.currency,
+          language: profileData.preferences.language,
+        } as any,
+      });
+
+      // Atualizar os dados do usuário
+      await refetch();
+
+      toast.success("Perfil atualizado", {
+        description: "Suas informações foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      toast.error("Erro ao atualizar perfil", {
+        description: "Ocorreu um erro ao atualizar suas informações.",
+      });
+    } finally {
+      setIsLoading(false);
     }
-
-    toast({
-      title: "Perfil atualizado",
-      description: "Suas informações foram atualizadas com sucesso.",
-    })
-
-    setIsLoading(false)
-  }
+  };
 
   const handleChangePassword = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
 
-    // Simulação de alteração de senha
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      // Simulação de alteração de senha
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    toast({
-      title: "Senha alterada",
-      description: "Sua senha foi alterada com sucesso.",
-    })
-
-    setIsLoading(false)
-  }
+      toast.success("Senha alterada", {
+        description: "Sua senha foi alterada com sucesso.",
+      });
+    } catch (error) {
+      toast.error("Erro ao alterar senha", {
+        description: "Ocorreu um erro ao alterar sua senha.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
 
-    // Simulação de exclusão de conta
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      // Excluir a conta do usuário
+      await deleteUserAccount(user?.$id || "");
 
-    toast({
-      title: "Conta excluída",
-      description: "Sua conta foi excluída permanentemente.",
-    })
+      toast.success("Conta excluída", {
+        description: "Sua conta foi excluída permanentemente.",
+      });
 
-    actions.logout()
-    router.push("/")
-
-    setIsLoading(false)
-  }
+      // Fazer logout e redirecionar para a página inicial
+      await logoutUser();
+      router.push("/");
+    } catch (error) {
+      toast.error("Erro ao excluir conta", {
+        description: "Ocorreu um erro ao excluir sua conta.",
+      });
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Meu Perfil</h1>
-        <p className="text-muted-foreground">Gerencie suas informações pessoais e preferências</p>
+        <p className="text-muted-foreground">
+          Gerencie suas informações pessoais e preferências
+        </p>
       </div>
 
       <Tabs defaultValue="personal">
@@ -134,13 +306,17 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Foto de Perfil</CardTitle>
-              <CardDescription>Esta foto será exibida em seu perfil e em suas avaliações</CardDescription>
+              <CardDescription>
+                Esta foto será exibida em seu perfil e em suas avaliações
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-6">
                 <div className="relative h-24 w-24">
                   <Image
-                    src={snap.auth.user?.avatar || "/placeholder.svg?height=100&width=100"}
+                    src={
+                      user?.avatar || "/placeholder.svg?height=100&width=100"
+                    }
                     alt="Foto de perfil"
                     fill
                     className="rounded-full object-cover"
@@ -148,37 +324,68 @@ export default function ProfilePage() {
                   <Button
                     size="icon"
                     className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
-                    onClick={() => {
-                      toast({
-                        title: "Funcionalidade em desenvolvimento",
-                        description: "A alteração de foto será implementada em breve.",
-                      })
-                    }}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
                   >
-                    <Camera className="h-4 w-4" />
+                    {uploadingImage ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
                 <div className="flex gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                  />
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      toast({
-                        title: "Funcionalidade em desenvolvimento",
-                        description: "A alteração de foto será implementada em breve.",
-                      })
-                    }}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
                   >
-                    Alterar Foto
+                    {uploadingImage ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="mr-2 h-4 w-4" />
+                        Alterar Foto
+                      </>
+                    )}
                   </Button>
                   <Button
                     variant="outline"
                     className="text-destructive hover:text-destructive"
-                    onClick={() => {
-                      toast({
-                        title: "Funcionalidade em desenvolvimento",
-                        description: "A remoção de foto será implementada em breve.",
-                      })
+                    onClick={async () => {
+                      if (!user || !user.avatar) return;
+
+                      try {
+                        setUploadingImage(true);
+                        // Atualizar a imagem de perfil do usuário para null
+                        await updateProfileImage(user.$id, "");
+                        // Atualizar os dados do usuário
+                        await refetch();
+
+                        toast.success("Foto removida", {
+                          description:
+                            "Sua foto de perfil foi removida com sucesso.",
+                        });
+                      } catch (error) {
+                        toast.error("Erro ao remover foto", {
+                          description:
+                            "Ocorreu um erro ao remover sua foto de perfil.",
+                        });
+                      } finally {
+                        setUploadingImage(false);
+                      }
                     }}
+                    disabled={uploadingImage || !user?.avatar}
                   >
                     Remover
                   </Button>
@@ -190,30 +397,45 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Informações Pessoais</CardTitle>
-              <CardDescription>Atualize suas informações pessoais</CardDescription>
+              <CardDescription>
+                Atualize suas informações pessoais
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome completo</Label>
-                  <Input id="name" name="name" value={profileData.name} onChange={handleChange} />
+                  <Input
+                    id="name"
+                    name="name"
+                    value={profileData.name}
+                    onChange={handleChange}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" value={profileData.email} onChange={handleChange} />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={profileData.email}
+                    onChange={handleChange}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">Telefone</Label>
-                  <Input id="phone" name="phone" value={profileData.phone} onChange={handleChange} />
+                  <Input
+                    id="phone"
+                    name="phone"
+                    value={profileData.phone}
+                    onChange={handleChange}
+                  />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="bio">Biografia</Label>
-                <Textarea id="bio" name="bio" rows={3} value={profileData.bio} onChange={handleChange} />
-              </div>
+              {/* Campo de biografia removido */}
             </CardContent>
             <CardFooter>
               <Button onClick={handleSaveProfile} disabled={isLoading}>
@@ -235,33 +457,60 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Endereço</CardTitle>
-              <CardDescription>Atualize seu endereço de correspondência</CardDescription>
+              <CardDescription>
+                Atualize seu endereço de correspondência
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="address">Endereço</Label>
-                <Input id="address" name="address" value={profileData.address} onChange={handleChange} />
+                <Input
+                  id="address"
+                  name="address"
+                  value={profileData.address}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="city">Cidade</Label>
-                  <Input id="city" name="city" value={profileData.city} onChange={handleChange} />
+                  <Input
+                    id="city"
+                    name="city"
+                    value={profileData.city}
+                    onChange={handleChange}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="state">Estado</Label>
-                  <Input id="state" name="state" value={profileData.state} onChange={handleChange} />
+                  <Input
+                    id="state"
+                    name="state"
+                    value={profileData.state}
+                    onChange={handleChange}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="zipCode">CEP</Label>
-                  <Input id="zipCode" name="zipCode" value={profileData.zipCode} onChange={handleChange} />
+                  <Input
+                    id="zipCode"
+                    name="zipCode"
+                    value={profileData.zipCode}
+                    onChange={handleChange}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="country">País</Label>
-                  <Input id="country" name="country" value={profileData.country} onChange={handleChange} />
+                  <Input
+                    id="country"
+                    name="country"
+                    value={profileData.country}
+                    onChange={handleChange}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -287,7 +536,9 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Preferências de Idioma e Moeda</CardTitle>
-              <CardDescription>Defina suas preferências de idioma e moeda</CardDescription>
+              <CardDescription>
+                Defina suas preferências de idioma e moeda
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -297,8 +548,16 @@ export default function ProfilePage() {
                     id="language"
                     name="language"
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={profileData.language}
-                    onChange={(e) => setProfileData((prev) => ({ ...prev, language: e.target.value }))}
+                    value={profileData.preferences.language}
+                    onChange={(e) =>
+                      setProfileData((prev) => ({
+                        ...prev,
+                        preferences: {
+                          ...prev.preferences,
+                          language: e.target.value,
+                        },
+                      }))
+                    }
                   >
                     <option value="pt-BR">Português (Brasil)</option>
                     <option value="en-US">English (United States)</option>
@@ -313,8 +572,16 @@ export default function ProfilePage() {
                     id="currency"
                     name="currency"
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={profileData.currency}
-                    onChange={(e) => setProfileData((prev) => ({ ...prev, currency: e.target.value }))}
+                    value={profileData.preferences.currency}
+                    onChange={(e) =>
+                      setProfileData((prev) => ({
+                        ...prev,
+                        preferences: {
+                          ...prev.preferences,
+                          currency: e.target.value,
+                        },
+                      }))
+                    }
                   >
                     <option value="BRL">Real Brasileiro (R$)</option>
                     <option value="USD">US Dollar ($)</option>
@@ -344,19 +611,27 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Preferências de Notificação</CardTitle>
-              <CardDescription>Escolha como e quando deseja receber notificações</CardDescription>
+              <CardDescription>
+                Escolha como e quando deseja receber notificações
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="email-notifications">Notificações por Email</Label>
-                    <p className="text-sm text-muted-foreground">Receba atualizações importantes por email</p>
+                    <Label htmlFor="email-notifications">
+                      Notificações por Email
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receba atualizações importantes por email
+                    </p>
                   </div>
                   <Switch
                     id="email-notifications"
-                    checked={profileData.notifications.email}
-                    onCheckedChange={(checked) => handleNotificationChange("email", checked)}
+                    checked={profileData.preferences.notifications.email}
+                    onCheckedChange={(checked) =>
+                      handleNotificationChange("email", checked)
+                    }
                   />
                 </div>
 
@@ -364,15 +639,19 @@ export default function ProfilePage() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="push-notifications">Notificações Push</Label>
+                    <Label htmlFor="push-notifications">
+                      Notificações Push
+                    </Label>
                     <p className="text-sm text-muted-foreground">
                       Receba notificações em tempo real no seu dispositivo
                     </p>
                   </div>
                   <Switch
                     id="push-notifications"
-                    checked={profileData.notifications.push}
-                    onCheckedChange={(checked) => handleNotificationChange("push", checked)}
+                    checked={profileData.preferences.notifications.push}
+                    onCheckedChange={(checked) =>
+                      handleNotificationChange("push", checked)
+                    }
                   />
                 </div>
 
@@ -380,31 +659,25 @@ export default function ProfilePage() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="sms-notifications">Notificações por SMS</Label>
-                    <p className="text-sm text-muted-foreground">Receba alertas importantes por SMS</p>
+                    <Label htmlFor="sms-notifications">
+                      Notificações por SMS
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receba alertas importantes por SMS
+                    </p>
                   </div>
                   <Switch
                     id="sms-notifications"
-                    checked={profileData.notifications.sms}
-                    onCheckedChange={(checked) => handleNotificationChange("sms", checked)}
+                    checked={profileData.preferences.notifications.sms}
+                    onCheckedChange={(checked) =>
+                      handleNotificationChange("sms", checked)
+                    }
                   />
                 </div>
 
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="promo-notifications">Promoções e Ofertas</Label>
-                    <p className="text-sm text-muted-foreground">Receba ofertas exclusivas e promoções especiais</p>
-                  </div>
-                  <Switch
-                    id="promo-notifications"
-                    checked={profileData.notifications.promotions}
-                    onCheckedChange={(checked) => handleNotificationChange("promotions", checked)}
-                  />
-                </div>
-
-                <Separator />
+                {/* Campo de promoções removido pois não existe no tipo User */}
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
@@ -415,24 +688,16 @@ export default function ProfilePage() {
                   </div>
                   <Switch
                     id="newsletter"
-                    checked={profileData.notifications.newsletter}
-                    onCheckedChange={(checked) => handleNotificationChange("newsletter", checked)}
+                    checked={profileData.preferences.newsletter}
+                    onCheckedChange={(checked) =>
+                      handleNotificationChange("newsletter", checked)
+                    }
                   />
                 </div>
 
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="trip-reminders">Lembretes de Viagem</Label>
-                    <p className="text-sm text-muted-foreground">Receba lembretes sobre suas próximas viagens</p>
-                  </div>
-                  <Switch
-                    id="trip-reminders"
-                    checked={profileData.notifications.tripReminders}
-                    onCheckedChange={(checked) => handleNotificationChange("tripReminders", checked)}
-                  />
-                </div>
+                {/* Campo de lembretes de viagem removido pois não existe no tipo User */}
               </div>
             </CardContent>
             <CardFooter>
@@ -457,22 +722,36 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Alterar Senha</CardTitle>
-              <CardDescription>Atualize sua senha para manter sua conta segura</CardDescription>
+              <CardDescription>
+                Atualize sua senha para manter sua conta segura
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="current-password">Senha Atual</Label>
-                <Input id="current-password" type="password" placeholder="••••••••" />
+                <Input
+                  id="current-password"
+                  type="password"
+                  placeholder="••••••••"
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="new-password">Nova Senha</Label>
-                <Input id="new-password" type="password" placeholder="••••••••" />
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="••••••••"
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-                <Input id="confirm-password" type="password" placeholder="••••••••" />
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="••••••••"
+                />
               </div>
             </CardContent>
             <CardFooter>
@@ -495,14 +774,18 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Sessões Ativas</CardTitle>
-              <CardDescription>Gerencie os dispositivos onde sua conta está conectada</CardDescription>
+              <CardDescription>
+                Gerencie os dispositivos onde sua conta está conectada
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">Este dispositivo</p>
-                    <p className="text-sm text-muted-foreground">Windows • Chrome • São Paulo, Brasil</p>
+                    <p className="text-sm text-muted-foreground">
+                      Windows • Chrome • São Paulo, Brasil
+                    </p>
                   </div>
                   <Button variant="outline" size="sm" disabled>
                     Sessão Atual
@@ -515,17 +798,18 @@ export default function ProfilePage() {
                   <div>
                     <p className="font-medium">iPhone 13</p>
                     <p className="text-sm text-muted-foreground">
-                      iOS • Safari • São Paulo, Brasil • Última atividade: 2 dias atrás
+                      iOS • Safari • São Paulo, Brasil • Última atividade: 2
+                      dias atrás
                     </p>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      toast({
-                        title: "Sessão encerrada",
-                        description: "A sessão no iPhone 13 foi encerrada com sucesso.",
-                      })
+                      toast.success("Sessão encerrada", {
+                        description:
+                          "A sessão no iPhone 13 foi encerrada com sucesso.",
+                      });
                     }}
                   >
                     Encerrar
@@ -538,17 +822,18 @@ export default function ProfilePage() {
                   <div>
                     <p className="font-medium">MacBook Pro</p>
                     <p className="text-sm text-muted-foreground">
-                      macOS • Firefox • Rio de Janeiro, Brasil • Última atividade: 1 semana atrás
+                      macOS • Firefox • Rio de Janeiro, Brasil • Última
+                      atividade: 1 semana atrás
                     </p>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      toast({
-                        title: "Sessão encerrada",
-                        description: "A sessão no MacBook Pro foi encerrada com sucesso.",
-                      })
+                      toast.success("Sessão encerrada", {
+                        description:
+                          "A sessão no MacBook Pro foi encerrada com sucesso.",
+                      });
                     }}
                   >
                     Encerrar
@@ -560,10 +845,10 @@ export default function ProfilePage() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  toast({
-                    title: "Sessões encerradas",
-                    description: "Todas as outras sessões foram encerradas com sucesso.",
-                  })
+                  toast.success("Sessões encerradas", {
+                    description:
+                      "Todas as outras sessões foram encerradas com sucesso.",
+                  });
                 }}
               >
                 Encerrar Todas as Outras Sessões
@@ -576,21 +861,25 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Dados da Conta</CardTitle>
-              <CardDescription>Gerencie suas informações de conta e preferências</CardDescription>
+              <CardDescription>
+                Gerencie suas informações de conta e preferências
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Exportar Dados</p>
-                  <p className="text-sm text-muted-foreground">Baixe uma cópia de todos os seus dados</p>
+                  <p className="text-sm text-muted-foreground">
+                    Baixe uma cópia de todos os seus dados
+                  </p>
                 </div>
                 <Button
                   variant="outline"
                   onClick={() => {
-                    toast({
-                      title: "Exportação iniciada",
-                      description: "Seus dados estão sendo preparados para download.",
-                    })
+                    toast.info("Exportação iniciada", {
+                      description:
+                        "Seus dados estão sendo preparados para download.",
+                    });
                   }}
                 >
                   Exportar
@@ -602,15 +891,17 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Histórico de Atividades</p>
-                  <p className="text-sm text-muted-foreground">Visualize o histórico de atividades da sua conta</p>
+                  <p className="text-sm text-muted-foreground">
+                    Visualize o histórico de atividades da sua conta
+                  </p>
                 </div>
                 <Button
                   variant="outline"
                   onClick={() => {
-                    toast({
-                      title: "Funcionalidade em desenvolvimento",
-                      description: "O histórico de atividades será implementado em breve.",
-                    })
+                    toast.info("Funcionalidade em desenvolvimento", {
+                      description:
+                        "O histórico de atividades será implementado em breve.",
+                    });
                   }}
                 >
                   Visualizar
@@ -622,7 +913,9 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-destructive">Zona de Perigo</CardTitle>
-              <CardDescription>Ações irreversíveis para sua conta</CardDescription>
+              <CardDescription>
+                Ações irreversíveis para sua conta
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -632,7 +925,11 @@ export default function ProfilePage() {
                     Exclua permanentemente sua conta e todos os seus dados
                   </p>
                 </div>
-                <Button variant="destructive" onClick={handleDeleteAccount} disabled={isLoading}>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAccount}
+                  disabled={isLoading}
+                >
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -651,5 +948,5 @@ export default function ProfilePage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

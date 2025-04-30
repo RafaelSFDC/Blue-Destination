@@ -157,15 +157,50 @@ export async function updateUserProfile(userId: string, data: Partial<User>) {
   const client = await createSessionClient();
 
   try {
+    // Preparar dados para atualização
+    const updateData: any = {
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Adicionar campos apenas se fornecidos
+    if (data.name) updateData.name = data.name;
+    if (data.avatar) updateData.avatar = data.avatar;
+    if (data.phone) updateData.phone = data.phone;
+
+    // Adicionar endereços se fornecidos
+    if (data.addresses && data.addresses.length > 0) {
+      updateData.addresses = data.addresses;
+    }
+
+    // Adicionar preferências se fornecidas
+    if (data.preferences) {
+      // Obter o documento atual para mesclar as preferências
+      const currentUser = await client.databases.getDocument(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+        COLLECTIONS.USERS,
+        userId
+      );
+
+      // Mesclar as preferências existentes com as novas
+      updateData.preferences = {
+        ...(currentUser.preferences || {}),
+        ...data.preferences,
+        // Mesclar as notificações separadamente se existirem
+        notifications: data.preferences.notifications
+          ? {
+              ...(currentUser.preferences?.notifications || {}),
+              ...(data.preferences.notifications || {}),
+            }
+          : currentUser.preferences?.notifications,
+      };
+    }
+
     // Atualizar documento do usuário no banco de dados
     const updatedUser = await client.databases.updateDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
       COLLECTIONS.USERS,
       userId,
-      {
-        name: data.name,
-        avatar: data.avatar,
-      }
+      updateData
     );
 
     const user = userSchema.parse(updatedUser);
@@ -233,5 +268,29 @@ export async function resetPassword(
     throw new Error(
       "Não foi possível redefinir sua senha. O link pode ter expirado."
     );
+  }
+}
+
+/**
+ * Exclui a conta do usuário
+ */
+export async function deleteUserAccount(userId: string) {
+  const client = await createSessionClient();
+
+  try {
+    // Excluir o documento do usuário no banco de dados
+    await client.databases.deleteDocument(
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+      COLLECTIONS.USERS,
+      userId
+    );
+
+    // Excluir a conta do usuário
+    await client.account.deleteSession("current");
+
+    return true;
+  } catch (error) {
+    console.error("Delete account error:", error);
+    throw new Error("Erro ao excluir conta. Tente novamente.");
   }
 }
