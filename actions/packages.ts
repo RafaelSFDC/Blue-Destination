@@ -1,7 +1,7 @@
 "use server";
 import { Query } from "appwrite";
 import { createSessionClient, COLLECTIONS } from "@/lib/appwrite";
-import { packageArraySchema } from "@/lib/schemas/package";
+import { packageArraySchema, packageSchema } from "@/lib/schemas/package";
 
 export async function getPackages() {
   const client = await createSessionClient();
@@ -30,4 +30,17 @@ export async function getFeaturedPackages({ limit }: { limit?: number }) {
   );
   const packages = packageArraySchema.parse(response.documents);
   return packages;
+}
+
+export async function getPackageById(id: string) {
+  const client = await createSessionClient();
+
+  const response = await client.databases.getDocument(
+    process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+    COLLECTIONS.PACKAGES,
+    id
+  );
+
+  const packageItem = packageSchema.parse(response);
+  return packageItem;
 }

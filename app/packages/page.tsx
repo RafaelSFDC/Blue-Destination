@@ -56,7 +56,6 @@ export default function PackagesPage() {
       pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pkg.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  console.log(packages);
 
   // Função para ordenar pacotes
   const sortedPackages = [...filteredPackages].sort((a, b) => {
