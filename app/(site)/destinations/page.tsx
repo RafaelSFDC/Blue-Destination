@@ -1,16 +1,62 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DestinationCard } from "@/components/destination-card";
-import { getDestinations, getAvailableRegions } from "@/lib/actions";
-import { Search, MapPin, Globe } from "lucide-react";
+import { Search, Filter, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { useDestinations } from "@/querys/useDestinations";
+import { useTagsByType } from "@/querys/useTags";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-export default async function DestinationsPage() {
-  const destinations = await getDestinations();
-  const regions = await getAvailableRegions();
+export default function DestinationsPage() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOption, setSortOption] = useState("name-asc");
+  const { data: destinations = [], isLoading: isLoadingDestinations } =
+    useDestinations();
+  const { data: tags = [], isLoading: isLoadingTags } =
+    useTagsByType("destination");
+
+  // Filtrar destinos com base no termo de busca
+  const filteredDestinations = destinations.filter(
+    (destination) =>
+      destination.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      destination.location.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Função para ordenar destinos
+  const sortedDestinations = [...filteredDestinations].sort((a, b) => {
+    switch (sortOption) {
+      case "name-asc":
+        return a.name.localeCompare(b.name);
+      case "name-desc":
+        return b.name.localeCompare(a.name);
+      case "rating-desc":
+        return (b.rating || 0) - (a.rating || 0);
+      case "rating-asc":
+        return (a.rating || 0) - (b.rating || 0);
+      case "popularity-desc":
+        return (b.reviewCount || 0) - (a.reviewCount || 0);
+      default:
+        return 0;
+    }
+  });
+
+  if (isLoadingDestinations || isLoadingTags) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <p className="mt-4">Carregando destinos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -31,38 +77,65 @@ export default async function DestinationsPage() {
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Buscar destinos..." className="pl-9" />
+              <Input
+                placeholder="Buscar destinos..."
+                className="pl-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" asChild>
-                <Link href="/destinations/map">
-                  <MapPin className="mr-2 h-4 w-4" />
-                  Ver no Mapa
+                <Link href="/search">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Busca Avançada
                 </Link>
               </Button>
-              <Button variant="outline" size="sm">
-                <Globe className="mr-2 h-4 w-4" />
-                Filtrar por Região
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <SlidersHorizontal className="mr-2 h-4 w-4" />
+                    Ordenar
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setSortOption("name-asc")}>
+                    Nome: A-Z
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOption("name-desc")}>
+                    Nome: Z-A
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOption("rating-desc")}>
+                    Melhor Avaliação
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOption("rating-asc")}>
+                    Pior Avaliação
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOption("popularity-desc")}>
+                    Mais Popular
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
           <Tabs defaultValue="all">
-            <TabsList className="mb-8">
+            <TabsList className="mb-8 flex flex-wrap">
               <TabsTrigger value="all">Todos</TabsTrigger>
               <TabsTrigger value="featured">Destaques</TabsTrigger>
-              {regions.map((region) => (
-                <TabsTrigger key={region} value={region}>
-                  {region}
+              {tags.map((tag) => (
+                <TabsTrigger key={tag.$id} value={tag.$id}>
+                  {tag.name}
                 </TabsTrigger>
               ))}
             </TabsList>
 
             <TabsContent value="all">
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {destinations.map((destination) => (
+                {sortedDestinations.map((destination) => (
                   <DestinationCard
-                    key={destination.id}
+                    key={destination.$id}
                     destination={destination}
                   />
                 ))}
@@ -71,25 +144,31 @@ export default async function DestinationsPage() {
 
             <TabsContent value="featured">
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {destinations
+                {sortedDestinations
                   .filter((destination) => destination.featured)
                   .map((destination) => (
                     <DestinationCard
-                      key={destination.id}
+                      key={destination.$id}
                       destination={destination}
                     />
                   ))}
               </div>
             </TabsContent>
 
-            {regions.map((region) => (
-              <TabsContent key={region} value={region}>
+            {tags.map((tag) => (
+              <TabsContent key={tag.$id} value={tag.$id}>
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {destinations
-                    .filter((destination) => destination.region === region)
+                  {sortedDestinations
+                    .filter(
+                      (destination) =>
+                        destination.tags &&
+                        destination.tags.some(
+                          (destTag) => destTag.$id === tag.$id
+                        )
+                    )
                     .map((destination) => (
                       <DestinationCard
-                        key={destination.id}
+                        key={destination.$id}
                         destination={destination}
                       />
                     ))}

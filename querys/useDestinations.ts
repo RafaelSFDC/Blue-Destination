@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { 
-  getDestinations, 
   getDestinationById, 
   getFeaturedDestinations,
   getPopularDestinations 
 } from "@/lib/actions";
 import { Destination } from "@/lib/types";
+import { getDestinations } from '@/actions/destinations';
 
 export function useDestinations() {
   return useQuery<Destination[]>({
