@@ -1,16 +1,15 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
 import { PackageDetails } from "./package-details";
 import { getPackageById } from "@/actions/packages";
 
 export default async function PackagePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const packageData = await getPackageById(params.id);
+  const item = await params;
+  const packageData = await getPackageById(item.id);
 
   if (!packageData) {
     notFound();
