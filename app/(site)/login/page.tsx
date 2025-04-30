@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
-import { actions } from "@/lib/store";
-import { authenticateUser } from "@/lib/actions";
+import { toast } from "sonner";
+import { authenticateUser } from "@/actions/auth";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,56 +14,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
-  const { toast } = useToast();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const demoLogin = async (type: "user" | "admin") => {
-    setIsLoading(true);
-
-    try {
-      const email = type === "admin" ? "admin@example.com" : "joao@example.com";
-      const result = await authenticateUser(email, "password");
-
-      if (result.success && result.user) {
-        actions.login(result.user);
-
-        toast({
-          title: "Login de demonstração",
-          description: `Logado como ${
-            type === "admin" ? "administrador" : "usuário"
-          }.`,
-        });
-      } else {
-        toast({
-          title: "Erro ao fazer login",
-          description: result.message || "Credenciais inválidas",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erro ao fazer login",
-        description:
-          "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email || !password) {
-      toast({
-        title: "Campos obrigatórios",
+      toast.error("Campos obrigatórios", {
         description: "Por favor, preencha todos os campos.",
-        variant: "destructive",
       });
       return;
     }
@@ -71,28 +34,18 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const result = await authenticateUser(email, password);
-
-      if (result.success && result.user) {
-        actions.login(result.user);
-
-        toast({
-          title: "Login realizado com sucesso",
-          description: `Bem-vindo(a) de volta, ${result.user.name}!`,
-        });
-      } else {
-        toast({
-          title: "Erro ao fazer login",
-          description: result.message || "Credenciais inválidas",
-          variant: "destructive",
-        });
+      const user = await authenticateUser(email, password);
+      if (!user) {
+        throw new Error("Credenciais inválidas");
       }
-    } catch (error) {
-      toast({
-        title: "Erro ao fazer login",
-        description:
-          "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
-        variant: "destructive",
+      toast.success("Login realizado com sucesso", {
+        description: `Bem-vindo(a) de volta, ${user.name}!`,
+      });
+
+      router.push("/dashboard");
+    } catch (error: any) {
+      toast.error("Erro ao fazer login", {
+        description: error.message,
       });
     } finally {
       setIsLoading(false);
@@ -223,23 +176,6 @@ export default function LoginPage() {
                     Ou continue com
                   </span>
                 </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => demoLogin("user")}
-                  disabled={isLoading}
-                >
-                  Login como Usuário
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => demoLogin("admin")}
-                  disabled={isLoading}
-                >
-                  Login como Admin
-                </Button>
               </div>
             </div>
 

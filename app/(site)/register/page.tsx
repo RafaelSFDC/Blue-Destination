@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-import type { User } from "@/lib/types"
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -11,12 +10,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/components/ui/use-toast"
-import { actions } from "@/lib/store"
+import { toast } from "sonner"
+import { registerUser } from "@/actions/auth"
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { toast } = useToast()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -30,28 +28,22 @@ export default function RegisterPage() {
     e.preventDefault()
 
     if (!name || !email || !password || !confirmPassword) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos.",
-        variant: "destructive",
+      toast.error("Campos obrigatórios", {
+        description: "Por favor, preencha todos os campos."
       })
       return
     }
 
     if (password !== confirmPassword) {
-      toast({
-        title: "Senhas não conferem",
-        description: "A senha e a confirmação de senha devem ser iguais.",
-        variant: "destructive",
+      toast.error("Senhas não conferem", {
+        description: "A senha e a confirmação de senha devem ser iguais."
       })
       return
     }
 
     if (!acceptTerms) {
-      toast({
-        title: "Termos e condições",
-        description: "Você precisa aceitar os termos e condições para continuar.",
-        variant: "destructive",
+      toast.error("Termos e condições", {
+        description: "Você precisa aceitar os termos e condições para continuar."
       })
       return
     }
@@ -59,34 +51,17 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      // Simulação de registro
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // Criar um novo usuário
-      const newUser: User = {
-        id: `user-${Date.now()}`,
-        name,
-        email,
-        role: "user",
-        isLoggedIn: true,
-        avatar: null,
-      }
-
-      // Fazer login com o novo usuário
-      actions.login(newUser)
-
-      toast({
-        title: "Registro realizado com sucesso",
-        description: `Bem-vindo(a), ${name}!`,
+      const user = await registerUser(email, password, name)
+      
+      toast.success("Registro realizado com sucesso", {
+        description: `Bem-vindo(a), ${name}!`
       })
 
       // Redirecionar para a página inicial
       router.push("/")
-    } catch (error) {
-      toast({
-        title: "Erro ao fazer registro",
-        description: "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
-        variant: "destructive",
+    } catch (error: any) {
+      toast.error("Erro ao fazer registro", {
+        description: error.message || "Ocorreu um erro ao processar sua solicitação. Tente novamente."
       })
     } finally {
       setIsLoading(false)
@@ -209,32 +184,35 @@ export default function RegisterPage() {
                   onCheckedChange={(checked) => setAcceptTerms(checked === true)}
                   disabled={isLoading}
                 />
-                <Label htmlFor="terms" className="text-sm font-normal">
+                <label
+                  htmlFor="terms"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
                   Eu aceito os{" "}
                   <Link href="/terms" className="text-primary hover:underline">
                     termos e condições
                   </Link>
-                </Label>
+                </label>
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Registrando...
+                    Processando...
                   </>
                 ) : (
                   "Criar conta"
                 )}
               </Button>
-            </form>
 
-            <div className="mt-6 text-center text-sm">
-              Já tem uma conta?{" "}
-              <Link href="/login" className="font-medium text-primary hover:underline">
-                Faça login
-              </Link>
-            </div>
+              <div className="mt-4 text-center text-sm">
+                Já tem uma conta?{" "}
+                <Link href="/login" className="text-primary hover:underline">
+                  Faça login
+                </Link>
+              </div>
+            </form>
           </div>
         </div>
       </div>
