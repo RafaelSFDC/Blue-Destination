@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+
+import { notFound, useParams } from "next/navigation";
 import {
   Calendar,
   MapPin,
@@ -31,37 +32,47 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/utils";
-import { getBookingById, getPackageById } from "@/lib/actions";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
+import { useUser } from "@/querys/useUser";
+import { BookingStatus, PaymentStatus, Booking, Package } from "@/lib/types";
 
-export default async function BookingDetailsPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { toast } = useToast();
+export default function BookingDetailsPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const item = await params;
+  const params = useParams();
+  const bookingId = params.id as string;
 
-  // Em um app real, estes dados viriam do servidor
-  const bookingData = await getBookingById(item.id);
-  const packageData = bookingData
-    ? await getPackageById(bookingData.packageId)
-    : null;
+  // Buscar dados do usuário e suas reservas usando React Query
+  const { data: userData, isLoading: isLoadingUser } = useUser();
 
-  if (!bookingData || !packageData) {
-    notFound();
+  // Encontrar a reserva específica pelo ID
+  const bookingData = userData?.bookings?.find(
+    (booking) => booking.$id === bookingId
+  ) as Booking | undefined;
+
+  // O pacote já está incluído na reserva
+  const packageData = bookingData?.package as Package | undefined;
+
+  const isPageLoading = isLoadingUser;
+
+  // Redirecionamento se não encontrar dados
+  if (!isPageLoading && (!bookingData || !packageData)) {
+    return notFound();
   }
+
+  // Definir tipos para os dados que podem não estar no formato esperado
+  const passengers = bookingData?.Passengers || [];
+  const itinerary = packageData?.itinerarys || [];
+  const payments = bookingData?.payments || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "confirmed":
+      case BookingStatus.CONFIRMED:
         return "bg-green-100 text-green-800 hover:bg-green-200";
-      case "pending":
+      case BookingStatus.PENDING:
         return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
-      case "cancelled":
+      case BookingStatus.CANCELLED:
         return "bg-red-100 text-red-800 hover:bg-red-200";
-      case "completed":
+      case BookingStatus.COMPLETED:
         return "bg-blue-100 text-blue-800 hover:bg-blue-200";
       default:
         return "bg-gray-100 text-gray-800 hover:bg-gray-200";
@@ -70,11 +81,13 @@ export default async function BookingDetailsPage({
 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
-      case "paid":
+      case PaymentStatus.PAID:
         return "bg-green-100 text-green-800 hover:bg-green-200";
-      case "pending":
+      case PaymentStatus.PENDING:
         return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
-      case "refunded":
+      case PaymentStatus.REFUNDED:
+        return "bg-red-100 text-red-800 hover:bg-red-200";
+      case PaymentStatus.FAILED:
         return "bg-red-100 text-red-800 hover:bg-red-200";
       default:
         return "bg-gray-100 text-gray-800 hover:bg-gray-200";
@@ -86,8 +99,7 @@ export default async function BookingDetailsPage({
 
     // Simulação de download
     setTimeout(() => {
-      toast({
-        title: "Voucher baixado com sucesso",
+      toast.success("Voucher baixado com sucesso", {
         description: "O voucher foi baixado para o seu dispositivo.",
       });
       setIsLoading(false);
@@ -99,13 +111,20 @@ export default async function BookingDetailsPage({
 
     // Simulação de envio de email
     setTimeout(() => {
-      toast({
-        title: "Email enviado com sucesso",
+      toast.success("Email enviado com sucesso", {
         description: "Os detalhes da reserva foram enviados para o seu email.",
       });
       setIsLoading(false);
     }, 1500);
   };
+
+  if (isPageLoading) {
+    return (
+      <div className="flex h-[70vh] items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -162,15 +181,15 @@ export default async function BookingDetailsPage({
                     <div>
                       <CardTitle>Informações da Reserva</CardTitle>
                       <CardDescription>
-                        Detalhes da sua reserva #{bookingData.id}
+                        Detalhes da sua reserva #{bookingData?.$id}
                       </CardDescription>
                     </div>
                     <Badge
                       className={`capitalize ${getStatusColor(
-                        bookingData.status
+                        bookingData?.status || BookingStatus.PENDING
                       )}`}
                     >
-                      {bookingData.status}
+                      {bookingData?.status || BookingStatus.PENDING}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -180,35 +199,9 @@ export default async function BookingDetailsPage({
                       <p className="text-sm font-medium text-muted-foreground">
                         Pacote
                       </p>
-                      <p className="font-medium">{packageData.name}</p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Destino
+                      <p className="font-medium">
+                        {packageData?.name || "Pacote não encontrado"}
                       </p>
-                      <p className="font-medium">Maldivas, Ásia</p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Data da Reserva
-                      </p>
-                      <p className="font-medium">{bookingData.bookingDate}</p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Data da Viagem
-                      </p>
-                      <p className="font-medium">{bookingData.travelDate}</p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Duração
-                      </p>
-                      <p className="font-medium">{packageData.duration} dias</p>
                     </div>
 
                     <div className="space-y-1">
@@ -216,55 +209,18 @@ export default async function BookingDetailsPage({
                         Viajantes
                       </p>
                       <p className="font-medium">
-                        {bookingData.travelers} pessoas
+                        {bookingData?.travelers || 0} pessoas
                       </p>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div>
-                    <h3 className="mb-2 text-sm font-medium">Inclui</h3>
-                    <ul className="grid gap-1 sm:grid-cols-2">
-                      {packageData.inclusions.map((inclusion, index) => (
-                        <li
-                          key={index}
-                          className="flex items-center gap-2 text-sm"
-                        >
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          <span>{inclusion}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Informações de Contato</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Nome
-                      </p>
-                      <p className="font-medium">João Pereira</p>
                     </div>
 
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">
-                        Email
+                        Contato de Emergência
                       </p>
-                      <p className="font-medium">joao@example.com</p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Telefone
-                      </p>
-                      <p className="font-medium">+55 (11) 98765-4321</p>
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <p className="font-medium">+55 11 99999-9999</p>
+                      </div>
                     </div>
 
                     <div className="space-y-1">
@@ -272,7 +228,7 @@ export default async function BookingDetailsPage({
                         Endereço
                       </p>
                       <p className="font-medium">
-                        Av. Paulista, 1000, São Paulo - SP
+                        {"Av. Paulista, 1000, São Paulo - SP"}
                       </p>
                     </div>
                   </div>
@@ -281,29 +237,60 @@ export default async function BookingDetailsPage({
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Suporte 24/7</CardTitle>
+                  <CardTitle>Passageiros</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-muted-foreground">
-                    Em caso de emergência ou dúvidas durante sua viagem, entre
-                    em contato com nossa equipe de suporte:
-                  </p>
+                <CardContent>
+                  <div className="space-y-4">
+                    {passengers.map((passenger, index) => (
+                      <div
+                        key={passenger.$id || index}
+                        className="rounded-lg border p-4"
+                      >
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground">
+                              Nome Completo
+                            </p>
+                            <p className="font-medium">{passenger.name}</p>
+                          </div>
 
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-5 w-5 text-primary" />
-                      <span>+55 (11) 9999-9999</span>
-                    </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground">
+                              Documento
+                            </p>
+                            <p className="font-medium">
+                              {passenger.document || "CPF"}
+                            </p>
+                          </div>
 
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-5 w-5 text-primary" />
-                      <span>suporte@bluedestination.com</span>
-                    </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground">
+                              Data de Nascimento
+                            </p>
+                            <p className="font-medium">{passenger.birthDate}</p>
+                          </div>
 
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5 text-primary" />
-                      <span>Chat no aplicativo</span>
-                    </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground">
+                              Tipo
+                            </p>
+                            <p className="font-medium capitalize">{"Adulto"}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {passengers.length === 0 && (
+                      <div className="rounded-lg border border-dashed p-6 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          Nenhum passageiro adicionado ainda. Adicione os
+                          detalhes dos passageiros para completar sua reserva.
+                        </p>
+                        <Button variant="outline" className="mt-4">
+                          Adicionar Passageiros
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -314,27 +301,30 @@ export default async function BookingDetailsPage({
                 <CardHeader>
                   <CardTitle>Itinerário da Viagem</CardTitle>
                   <CardDescription>
-                    Roteiro detalhado do seu pacote
+                    Detalhes do seu roteiro de {packageData?.duration || 0} dias
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {packageData.itinerary.map((day) => (
-                      <div key={day.day} className="flex gap-4">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white">
-                          <Calendar className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">
-                            Dia {day.day}: {day.title}
-                          </h3>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {day.description}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <CardContent className="space-y-6">
+                  {itinerary.map((day: any, index: number) => (
+                    <div key={index} className="space-y-2">
+                      <h3 className="font-medium">
+                        Dia {index + 1}: {day.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {day.description}
+                      </p>
+                      {day.activities && (
+                        <ul className="ml-6 list-disc text-sm">
+                          {day.activities.map(
+                            (activity: string, actIndex: number) => (
+                              <li key={actIndex}>{activity}</li>
+                            )
+                          )}
+                        </ul>
+                      )}
+                      {index < itinerary.length - 1 && <Separator />}
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -346,46 +336,50 @@ export default async function BookingDetailsPage({
                     <div>
                       <CardTitle>Detalhes do Pagamento</CardTitle>
                       <CardDescription>
-                        Informações sobre seu pagamento
+                        Informações sobre o pagamento da sua reserva
                       </CardDescription>
                     </div>
                     <Badge
                       className={`capitalize ${getPaymentStatusColor(
-                        bookingData.paymentStatus
+                        payments[0]?.status || "pending"
                       )}`}
                     >
-                      {bookingData.paymentStatus}
+                      {payments[0]?.status || "pending"}
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">
                         Método de Pagamento
                       </p>
-                      <p className="font-medium">Cartão de Crédito</p>
+                      <p className="font-medium">
+                        {payments[0]?.method || "Cartão de Crédito"}
+                      </p>
                     </div>
 
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">
                         Data do Pagamento
                       </p>
-                      <p className="font-medium">10/05/2023</p>
+                      <p className="font-medium">{"Pendente"}</p>
                     </div>
 
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">
-                        Número do Cartão
+                        Número da Transação
                       </p>
-                      <p className="font-medium">**** **** **** 1234</p>
+                      <p className="font-medium">{"N/A"}</p>
                     </div>
 
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">
-                        Titular do Cartão
+                        Parcelas
                       </p>
-                      <p className="font-medium">João Pereira</p>
+                      <p className="font-medium">
+                        1x de {formatCurrency(bookingData?.totalPrice || 0)}
+                      </p>
                     </div>
                   </div>
 
@@ -394,12 +388,12 @@ export default async function BookingDetailsPage({
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <p className="text-muted-foreground">Preço por pessoa</p>
-                      <p>{formatCurrency(packageData.price)}</p>
+                      <p>{formatCurrency(packageData?.price || 0)}</p>
                     </div>
 
                     <div className="flex justify-between">
                       <p className="text-muted-foreground">Viajantes</p>
-                      <p>x {bookingData.travelers}</p>
+                      <p>x {bookingData?.travelers || 0}</p>
                     </div>
 
                     <div className="flex justify-between">
@@ -416,21 +410,21 @@ export default async function BookingDetailsPage({
 
                     <div className="flex justify-between font-bold">
                       <p>Total</p>
-                      <p>{formatCurrency(bookingData.totalPrice)}</p>
+                      <p>{formatCurrency(bookingData?.totalPrice || 0)}</p>
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <Button
                     variant="outline"
-                    disabled={bookingData.paymentStatus !== "pending"}
+                    disabled={payments[0]?.status !== "pending"}
                   >
                     <CreditCard className="mr-2 h-4 w-4" />
                     Pagar Agora
                   </Button>
                   <Button
                     variant="outline"
-                    disabled={bookingData.paymentStatus !== "paid"}
+                    disabled={payments[0]?.status !== "paid"}
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Recibo
@@ -477,7 +471,7 @@ export default async function BookingDetailsPage({
                   <Button
                     variant="outline"
                     className="w-full"
-                    disabled={bookingData.status === "cancelled"}
+                    disabled={bookingData?.status === BookingStatus.CANCELLED}
                   >
                     Solicitar Cancelamento
                   </Button>
@@ -490,14 +484,14 @@ export default async function BookingDetailsPage({
         <div>
           <Card className="sticky top-20">
             <CardHeader className="pb-2">
-              <CardTitle>{packageData.name}</CardTitle>
+              <CardTitle>{packageData?.name || "Pacote"}</CardTitle>
               <CardDescription>Resumo da reserva</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="aspect-video overflow-hidden rounded-md">
                 <img
-                  src={packageData.imageUrl || "/placeholder.svg"}
-                  alt={packageData.name}
+                  src={packageData?.imageUrl || "/placeholder.svg"}
+                  alt={packageData?.name || "Pacote"}
                   className="h-full w-full object-cover"
                 />
               </div>
@@ -508,7 +502,7 @@ export default async function BookingDetailsPage({
                   <div>
                     <p className="text-sm font-medium">Data da Viagem</p>
                     <p className="text-sm text-muted-foreground">
-                      {bookingData.travelDate}
+                      {bookingData?.travelDate || "Data não definida"}
                     </p>
                   </div>
                 </div>
@@ -518,7 +512,7 @@ export default async function BookingDetailsPage({
                   <div>
                     <p className="text-sm font-medium">Duração</p>
                     <p className="text-sm text-muted-foreground">
-                      {packageData.duration} dias
+                      {packageData?.duration || 0} dias
                     </p>
                   </div>
                 </div>
@@ -538,7 +532,7 @@ export default async function BookingDetailsPage({
                   <div>
                     <p className="text-sm font-medium">Viajantes</p>
                     <p className="text-sm text-muted-foreground">
-                      {bookingData.travelers} pessoas
+                      {bookingData?.travelers || 0} pessoas
                     </p>
                   </div>
                 </div>
@@ -548,7 +542,7 @@ export default async function BookingDetailsPage({
                   <div>
                     <p className="text-sm font-medium">Valor Total</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatCurrency(bookingData.totalPrice)}
+                      {formatCurrency(bookingData?.totalPrice || 0)}
                     </p>
                   </div>
                 </div>
@@ -556,7 +550,7 @@ export default async function BookingDetailsPage({
             </CardContent>
             <CardFooter className="flex flex-col gap-2">
               <Button className="w-full" asChild>
-                <Link href={`/packages/${packageData.id}`}>
+                <Link href={`/packages/${packageData?.$id || ""}`}>
                   Ver Detalhes do Pacote
                 </Link>
               </Button>
