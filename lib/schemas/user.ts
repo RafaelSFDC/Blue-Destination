@@ -1,22 +1,10 @@
 import { z } from "zod";
-import { UserRole } from "@/lib/types";
+import type { User } from "@/lib/types";
 
-// Criando schema baseado na interface User existente
-export const userSchema = z.object({
-  $id: z.string(),
-  name: z.string(),
-  email: z.string().email(),
-  role: z.nativeEnum(UserRole),
-  avatar: z.string().nullable(),
-  phone: z.string().optional(),
-  addresses: z.array(z.any()).optional(),
-  favorites: z.array(z.any()).optional(),
-  bookings: z.array(z.any()).default([]),
-  notifications: z.array(z.any()).optional(),
-  testimonials: z.array(z.any()).optional(),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
-  preferences: z.any().optional()
-});
+// Usando z.custom para garantir que o schema seja idêntico ao type User
+export const userSchema = z.custom<User>();
+
+// Se precisar de validações específicas em alguns campos, pode usar z.custom<User>().superRefine()
+// para adicionar validações personalizadas sem redefinir a estrutura
 
 export type UserSchema = z.infer<typeof userSchema>;

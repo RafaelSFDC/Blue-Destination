@@ -1,9 +1,11 @@
-import Link from "next/link"
-import { Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { MainNav } from "@/components/main-nav"
-import { UserNav } from "@/components/user-nav"
-import { Notifications } from "@/components/notifications"
+import Link from "next/link";
+import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MainNav } from "@/components/main-nav";
+import { UserNav } from "@/components/user-nav";
+import { Notifications } from "@/components/notifications";
+import { useSnapshot } from "valtio";
+import { state } from "@/lib/store";
 
 export function SiteHeader() {
   return (
@@ -29,5 +31,5 @@ export function SiteHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }
