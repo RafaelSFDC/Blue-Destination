@@ -1,71 +1,14 @@
 import { Suspense } from "react";
 import { SearchPage } from "./search-page";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDestinations, getAllTags, getFilterRanges } from "@/lib/actions";
 
-export default async function Search({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  // Buscar dados necessários para os filtros
-  const destinations = await getDestinations();
-  const allTags = await getAllTags();
-  const filterRanges = await getFilterRanges();
-
-  const search = await searchParams;
-
+export default function Search() {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
         <div className="container py-8">
           <Suspense fallback={<SearchSkeleton />}>
-            <SearchPage
-              initialQuery={(search.q as string) || ""}
-              initialDestination={search.destination as string}
-              initialMinPrice={
-                search.minPrice
-                  ? Number.parseInt(search.minPrice as string)
-                  : filterRanges.price.min
-              }
-              initialMaxPrice={
-                search.maxPrice
-                  ? Number.parseInt(search.maxPrice as string)
-                  : filterRanges.price.max
-              }
-              initialMinDuration={
-                search.minDuration
-                  ? Number.parseInt(search.minDuration as string)
-                  : filterRanges.duration.min
-              }
-              initialMaxDuration={
-                search.maxDuration
-                  ? Number.parseInt(search.maxDuration as string)
-                  : filterRanges.duration.max
-              }
-              initialRatings={
-                search.ratings
-                  ? (search.ratings as string).split(",").map(Number)
-                  : []
-              }
-              initialTags={
-                search.tags ? (search.tags as string).split(",") : []
-              }
-              initialSortBy={(search.sortBy as string) || "price-asc"}
-              initialPage={
-                search.page ? Number.parseInt(search.page as string) : 1
-              }
-              initialTravelers={
-                search.travelers
-                  ? Number.parseInt(search.travelers as string)
-                  : 1
-              }
-              destinations={destinations}
-              allTags={allTags}
-              filterRanges={filterRanges}
-            />
+            <SearchPage />
           </Suspense>
         </div>
       </main>

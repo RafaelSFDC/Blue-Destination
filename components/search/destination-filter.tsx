@@ -1,34 +1,58 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import type { Destination } from "@/lib/mock-data"
+import { useState, useEffect } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import type { Destination } from "@/app/(site)/search/search-page";
 
 interface DestinationFilterProps {
-  destinations: Destination[]
-  onChange: (destinationId: string | null) => void
-  defaultValue?: string | null
+  destinations: Destination[];
+  onChange: (destinationId: string | null) => void;
+  defaultValue?: string | null;
 }
 
-export function DestinationFilter({ destinations, onChange, defaultValue = null }: DestinationFilterProps) {
-  const [open, setOpen] = useState(false)
-  const [value, setValue] = useState<string | null>(defaultValue)
+export function DestinationFilter({
+  destinations,
+  onChange,
+  defaultValue = null,
+}: DestinationFilterProps) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState<string | null>(defaultValue);
 
   useEffect(() => {
-    setValue(defaultValue)
-  }, [defaultValue])
+    setValue(defaultValue);
+  }, [defaultValue]);
 
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-medium">Destino</h3>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
-            {value ? destinations.find((destination) => destination.id === value)?.name : "Selecione um destino"}
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+          >
+            {value
+              ? destinations.find(
+                  (destination) => (destination.id || destination.$id) === value
+                )?.name
+              : "Selecione um destino"}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -40,16 +64,24 @@ export function DestinationFilter({ destinations, onChange, defaultValue = null 
               <CommandGroup className="max-h-60 overflow-auto">
                 {destinations.map((destination) => (
                   <CommandItem
-                    key={destination.id}
-                    value={destination.id}
+                    key={destination.id || destination.$id}
+                    value={destination.id || destination.$id}
                     onSelect={(currentValue) => {
-                      const newValue = currentValue === value ? null : currentValue
-                      setValue(newValue)
-                      onChange(newValue)
-                      setOpen(false)
+                      const newValue =
+                        currentValue === value ? null : currentValue;
+                      setValue(newValue);
+                      onChange(newValue);
+                      setOpen(false);
                     }}
                   >
-                    <Check className={cn("mr-2 h-4 w-4", value === destination.id ? "opacity-100" : "opacity-0")} />
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === (destination.id || destination.$id)
+                          ? "opacity-100"
+                          : "opacity-0"
+                      )}
+                    />
                     {destination.name}
                   </CommandItem>
                 ))}
@@ -59,5 +91,5 @@ export function DestinationFilter({ destinations, onChange, defaultValue = null 
         </PopoverContent>
       </Popover>
     </div>
-  )
+  );
 }

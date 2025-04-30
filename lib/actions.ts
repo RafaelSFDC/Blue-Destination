@@ -147,7 +147,46 @@ export async function getFilterRanges() {
 
 // Função para buscar pacotes com filtros
 export async function searchPackages(filters: SearchFilters) {
-  return appwriteService.searchPackages(filters);
+  const packages = await appwriteService.searchPackages(filters);
+
+  // Aplicar paginação manual se necessário
+  const page = filters.page || 1;
+  const limit = filters.limit || 9;
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+
+  // Aplicar ordenação manual se necessário
+  let sortedPackages = [...packages];
+  if (filters.sortBy) {
+    switch (filters.sortBy) {
+      case "price-asc":
+        sortedPackages.sort((a, b) => a.price - b.price);
+        break;
+      case "price-desc":
+        sortedPackages.sort((a, b) => b.price - a.price);
+        break;
+      case "duration-asc":
+        sortedPackages.sort((a, b) => a.duration - b.duration);
+        break;
+      case "duration-desc":
+        sortedPackages.sort((a, b) => b.duration - a.duration);
+        break;
+      case "name-asc":
+        sortedPackages.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name-desc":
+        sortedPackages.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      default:
+        // Manter a ordem padrão
+        break;
+    }
+  }
+
+  // Aplicar paginação
+  const paginatedPackages = sortedPackages.slice(startIndex, endIndex);
+
+  return paginatedPackages;
 }
 
 // Função para criar um novo depoimento
