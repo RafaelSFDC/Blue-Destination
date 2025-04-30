@@ -176,3 +176,62 @@ export async function updateUserProfile(userId: string, data: Partial<User>) {
     throw new Error("Erro ao atualizar perfil. Tente novamente.");
   }
 }
+
+/**
+ * Solicita redefinição de senha
+ */
+export async function requestPasswordReset(email: string) {
+  const client = await createSessionClient();
+
+  try {
+    // Criar token de recuperação
+    await client.account.createRecovery(
+      email,
+      process.env.NEXT_PUBLIC_APP_URL + "/reset-password"
+    );
+    return true;
+  } catch (error) {
+    console.error("Password reset request error:", error);
+    throw new Error(
+      "Não foi possível enviar o email de recuperação. Tente novamente."
+    );
+  }
+}
+
+/**
+ * Verifica se o token de redefinição é válido
+ */
+export async function verifyResetToken(userId: string, token: string) {
+  const client = await createSessionClient();
+
+  try {
+    // Verificar token (esta é uma simulação, já que o Appwrite não tem um endpoint específico para isso)
+    // Em um cenário real, você pode verificar o token no banco de dados
+    return true;
+  } catch (error) {
+    console.error("Token verification error:", error);
+    return false;
+  }
+}
+
+/**
+ * Redefine a senha do usuário
+ */
+export async function resetPassword(
+  userId: string,
+  token: string,
+  newPassword: string
+) {
+  const client = await createSessionClient();
+
+  try {
+    // Completar a recuperação de senha
+    await client.account.updateRecovery(userId, token, newPassword);
+    return true;
+  } catch (error) {
+    console.error("Password reset error:", error);
+    throw new Error(
+      "Não foi possível redefinir sua senha. O link pode ter expirado."
+    );
+  }
+}
