@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-
-import { notFound, useParams } from "next/navigation";
+import {
+  notFound,
+  useParams,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import {
   Calendar,
   MapPin,
@@ -18,6 +22,7 @@ import {
   ArrowLeft,
   CheckCircle,
   XCircle,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,10 +40,17 @@ import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import { useUser } from "@/querys/useUser";
 import { BookingStatus, PaymentStatus, Booking, Package } from "@/lib/types";
+import { PaymentCheckout } from "@/components/payment-checkout";
+import { createStripeCheckoutSession } from "@/actions/payment";
+import { cancelBooking } from "@/actions/bookings";
 
 export default function BookingDetailsPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentCancelled, setPaymentCancelled] = useState(false);
   const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const bookingId = params.id as string;
 
   // Buscar dados do usuário e suas reservas usando React Query
@@ -53,6 +65,35 @@ export default function BookingDetailsPage() {
   const packageData = bookingData?.package as Package | undefined;
 
   const isPageLoading = isLoadingUser;
+
+  // Verificar parâmetros de URL para status de pagamento
+  useEffect(() => {
+    const paymentSuccess = searchParams.get("payment_success");
+    const paymentCancelled = searchParams.get("payment_cancelled");
+
+    if (paymentSuccess === "true") {
+      setPaymentSuccess(true);
+      toast.success("Pagamento realizado com sucesso", {
+        description: "Sua reserva foi confirmada. Obrigado pela sua compra!",
+      });
+
+      // Remover parâmetros da URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+
+    if (paymentCancelled === "true") {
+      setPaymentCancelled(true);
+      toast.error("Pagamento cancelado", {
+        description:
+          "Você cancelou o processo de pagamento. Tente novamente quando estiver pronto.",
+      });
+
+      // Remover parâmetros da URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, [searchParams]);
 
   // Redirecionamento se não encontrar dados
   if (!isPageLoading && (!bookingData || !packageData)) {
@@ -91,6 +132,56 @@ export default function BookingDetailsPage() {
         return "bg-red-100 text-red-800 hover:bg-red-200";
       default:
         return "bg-gray-100 text-gray-800 hover:bg-gray-200";
+    }
+  };
+
+  // Função para processar o pagamento
+  const handlePayment = async () => {
+    try {
+      setIsLoading(true);
+
+      // Criar sessão de checkout do Stripe
+      const result = await createStripeCheckoutSession(bookingId);
+
+      if (result.success && result.url) {
+        // Redirecionar para a página de checkout do Stripe
+        window.location.href = result.url;
+      }
+    } catch (error) {
+      console.error("Erro ao processar pagamento:", error);
+      toast.error("Erro ao processar pagamento", {
+        description:
+          "Não foi possível iniciar o processo de pagamento. Tente novamente.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Função para cancelar a reserva
+  const handleCancelBooking = async () => {
+    if (!confirm("Tem certeza que deseja cancelar esta reserva?")) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await cancelBooking(bookingId);
+
+      toast.success("Reserva cancelada com sucesso", {
+        description:
+          "Sua reserva foi cancelada. Se você realizou algum pagamento, o reembolso será processado em breve.",
+      });
+
+      // Atualizar a página
+      router.refresh();
+    } catch (error) {
+      console.error("Erro ao cancelar reserva:", error);
+      toast.error("Erro ao cancelar reserva", {
+        description: "Não foi possível cancelar sua reserva. Tente novamente.",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -417,10 +508,15 @@ export default function BookingDetailsPage() {
                 <CardFooter className="flex justify-between">
                   <Button
                     variant="outline"
-                    disabled={payments[0]?.status !== "pending"}
+                    disabled={
+                      payments[0]?.status === "paid" ||
+                      bookingData?.status === BookingStatus.CANCELLED ||
+                      isLoading
+                    }
+                    onClick={handlePayment}
                   >
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Pagar Agora
+                    {isLoading ? "Processando..." : "Pagar Agora"}
                   </Button>
                   <Button
                     variant="outline"
@@ -471,9 +567,13 @@ export default function BookingDetailsPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    disabled={bookingData?.status === BookingStatus.CANCELLED}
+                    disabled={
+                      bookingData?.status === BookingStatus.CANCELLED ||
+                      isLoading
+                    }
+                    onClick={handleCancelBooking}
                   >
-                    Solicitar Cancelamento
+                    {isLoading ? "Processando..." : "Solicitar Cancelamento"}
                   </Button>
                 </CardFooter>
               </Card>

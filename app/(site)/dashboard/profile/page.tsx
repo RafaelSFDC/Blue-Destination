@@ -1,14 +1,8 @@
 "use client";
 
-import type React from "react";
-import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -18,257 +12,149 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Camera, Loader2, Save, Lock, Bell, Globe, Trash2 } from "lucide-react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import { useUser } from "@/querys/useUser";
 import {
   updateUserProfile,
   deleteUserAccount,
   logoutUser,
 } from "@/actions/auth";
-import { uploadImage, updateProfileImage } from "@/actions/storage";
 
-// Definindo a interface para o estado do formulário
-interface ProfileFormData {
-  name: string;
-  email: string;
-  phone: string;
-  // Campos de endereço (relacionados a user.addresses[0])
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  // Preferências do usuário
-  preferences: {
-    newsletter: boolean;
-    notifications: {
-      email: boolean;
-      push: boolean;
-      sms: boolean;
-    };
-    currency: string;
-    language: string;
-  };
-}
+// Componentes
+import { ProfileImageUpload } from "@/components/profile-image-upload";
+import { PersonalInfoForm } from "@/components/personal-info-form";
+import { AddressForm } from "@/components/address-form";
+import { PreferencesForm } from "@/components/preferences-form";
+import { SecurityForm } from "@/components/security-form";
+
+// Tipos
+import { Address } from "@/lib/types";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { data: user, refetch } = useUser();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Referência para o input de arquivo
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  // Verificar se o usuário está carregando ou não existe
+  if (!user) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">Meu Perfil</h1>
+          <p className="text-muted-foreground">
+            Gerencie suas informações pessoais e preferências
+          </p>
+        </div>
 
-  // Estado para armazenar os dados do formulário
-  const [profileData, setProfileData] = useState<ProfileFormData>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
-    country: "Brasil",
-    preferences: {
-      newsletter: false,
-      notifications: {
-        email: true,
-        push: true,
-        sms: false,
-      },
-      currency: "BRL",
-      language: "pt-BR",
-    },
-  });
+        <div className="flex h-40 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        </div>
+      </div>
+    );
+  }
 
-  // Atualizar o estado quando os dados do usuário estiverem disponíveis
-  useEffect(() => {
-    if (user) {
-      // Obter o primeiro endereço do usuário, se existir
-      const primaryAddress =
-        user.addresses && user.addresses.length > 0 ? user.addresses[0] : null;
-
-      setProfileData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        // Usar os dados do endereço principal, se disponível
-        address: primaryAddress?.street || "",
-        city: primaryAddress?.city || "",
-        state: primaryAddress?.state || "",
-        zipCode: primaryAddress?.zipCode || "",
-        country: primaryAddress?.country || "Brasil",
-        preferences: {
-          newsletter: user.preferences?.newsletter || false,
-          notifications: {
-            email: user.preferences?.notifications?.email || true,
-            push: user.preferences?.notifications?.push || true,
-            sms: user.preferences?.notifications?.sms || false,
-          },
-          currency: user.preferences?.currency || "BRL",
-          language: user.preferences?.language || "pt-BR",
-        },
-      });
-    }
-  }, [user]);
-
-  // Função para lidar com o upload de imagem
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
-
+  // Função para atualizar informações pessoais
+  const handleUpdatePersonalInfo = async (data: {
+    name: string;
+    email: string;
+    phone?: string;
+  }) => {
     try {
-      setUploadingImage(true);
+      setIsLoading(true);
 
-      // Fazer upload da imagem
-      const imageUrl = await uploadImage(file);
+      await updateUserProfile(user.$id, {
+        name: data.name,
+        email: data.email,
+        phone: data.phone || "",
+      });
 
-      // Atualizar a imagem de perfil do usuário
-      await updateProfileImage(user.$id, imageUrl);
-
-      // Atualizar os dados do usuário
       await refetch();
 
-      toast.success("Imagem atualizada", {
-        description: "Sua foto de perfil foi atualizada com sucesso.",
+      toast.success("Informações atualizadas", {
+        description: "Suas informações pessoais foram atualizadas com sucesso.",
       });
     } catch (error) {
-      toast.error("Erro ao atualizar imagem", {
-        description: "Ocorreu um erro ao atualizar sua foto de perfil.",
+      console.error("Erro ao atualizar informações:", error);
+      toast.error("Erro ao atualizar informações", {
+        description: "Ocorreu um erro ao atualizar suas informações pessoais.",
       });
     } finally {
-      setUploadingImage(false);
+      setIsLoading(false);
     }
   };
 
-  // Função para atualizar os dados do formulário
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-
-    // Atualizar o estado com base no nome do campo
-    setProfileData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // Função para atualizar as preferências de notificação
-  const handleNotificationChange = (key: string, checked: boolean) => {
-    setProfileData((prev) => {
-      if (key === "newsletter") {
-        return {
-          ...prev,
-          preferences: {
-            ...prev.preferences,
-            newsletter: checked,
-          },
-        };
-      } else if (key === "email" || key === "push" || key === "sms") {
-        return {
-          ...prev,
-          preferences: {
-            ...prev.preferences,
-            notifications: {
-              ...prev.preferences.notifications,
-              [key]: checked,
-            },
-          },
-        };
-      }
-      return prev;
-    });
-  };
-
-  // Função para salvar o perfil
-  const handleSaveProfile = async () => {
-    setIsLoading(true);
-
+  // Função para atualizar endereço
+  const handleUpdateAddress = async (addressData: any) => {
     try {
-      if (!user) return;
-
-      // Preparar o objeto de endereço
-      const addressData = {
-        street: profileData.address,
-        city: profileData.city,
-        state: profileData.state,
-        zipCode: profileData.zipCode,
-        country: profileData.country,
-      };
+      setIsLoading(true);
 
       // Criar um array de endereços
       const addresses =
         user.addresses && user.addresses.length > 0
-          ? [
-              // Atualizar o primeiro endereço
-              { ...user.addresses[0], ...addressData },
-            ]
-          : [addressData]; // Criar um novo endereço se não existir
+          ? [{ ...user.addresses[0], ...addressData }] // Atualizar o primeiro endereço
+          : [addressData]; // Criar um novo endereço
 
-      // Atualizar o perfil do usuário
       await updateUserProfile(user.$id, {
-        name: profileData.name,
-        email: profileData.email,
-        phone: profileData.phone,
-        // Converter para any para evitar problemas de tipo
-        addresses: addresses as any,
-        preferences: {
-          newsletter: profileData.preferences.newsletter,
-          notifications: {
-            email: profileData.preferences.notifications.email,
-            push: profileData.preferences.notifications.push,
-            sms: profileData.preferences.notifications.sms,
-          },
-          currency: profileData.preferences.currency,
-          language: profileData.preferences.language,
-        } as any,
+        addresses: addresses as Address[],
       });
 
-      // Atualizar os dados do usuário
       await refetch();
 
-      toast.success("Perfil atualizado", {
-        description: "Suas informações foram atualizadas com sucesso.",
+      toast.success("Endereço atualizado", {
+        description: "Seu endereço foi atualizado com sucesso.",
       });
     } catch (error) {
-      toast.error("Erro ao atualizar perfil", {
-        description: "Ocorreu um erro ao atualizar suas informações.",
+      console.error("Erro ao atualizar endereço:", error);
+      toast.error("Erro ao atualizar endereço", {
+        description: "Ocorreu um erro ao atualizar seu endereço.",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChangePassword = async () => {
-    setIsLoading(true);
-
+  // Função para atualizar preferências
+  const handleUpdatePreferences = async (preferencesData: any) => {
     try {
-      // Simulação de alteração de senha
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setIsLoading(true);
 
-      toast.success("Senha alterada", {
-        description: "Sua senha foi alterada com sucesso.",
+      await updateUserProfile(user.$id, {
+        preferences: preferencesData,
+      });
+
+      await refetch();
+
+      toast.success("Preferências atualizadas", {
+        description: "Suas preferências foram atualizadas com sucesso.",
       });
     } catch (error) {
-      toast.error("Erro ao alterar senha", {
-        description: "Ocorreu um erro ao alterar sua senha.",
+      console.error("Erro ao atualizar preferências:", error);
+      toast.error("Erro ao atualizar preferências", {
+        description: "Ocorreu um erro ao atualizar suas preferências.",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Função para excluir conta
   const handleDeleteAccount = async () => {
-    setIsLoading(true);
+    // Confirmar exclusão
+    if (
+      !confirm(
+        "Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita."
+      )
+    ) {
+      return;
+    }
 
     try {
+      setIsLoading(true);
+
       // Excluir a conta do usuário
-      await deleteUserAccount(user?.$id || "");
+      await deleteUserAccount(user.$id);
 
       toast.success("Conta excluída", {
         description: "Sua conta foi excluída permanentemente.",
@@ -278,9 +164,11 @@ export default function ProfilePage() {
       await logoutUser();
       router.push("/");
     } catch (error) {
+      console.error("Erro ao excluir conta:", error);
       toast.error("Erro ao excluir conta", {
         description: "Ocorreu um erro ao excluir sua conta.",
       });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -311,86 +199,7 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-6">
-                <div className="relative h-24 w-24">
-                  <Image
-                    src={
-                      user?.avatar || "/placeholder.svg?height=100&width=100"
-                    }
-                    alt="Foto de perfil"
-                    fill
-                    className="rounded-full object-cover"
-                  />
-                  <Button
-                    size="icon"
-                    className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingImage}
-                  >
-                    {uploadingImage ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Camera className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingImage}
-                  >
-                    {uploadingImage ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Enviando...
-                      </>
-                    ) : (
-                      <>
-                        <Camera className="mr-2 h-4 w-4" />
-                        Alterar Foto
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="text-destructive hover:text-destructive"
-                    onClick={async () => {
-                      if (!user || !user.avatar) return;
-
-                      try {
-                        setUploadingImage(true);
-                        // Atualizar a imagem de perfil do usuário para null
-                        await updateProfileImage(user.$id, "");
-                        // Atualizar os dados do usuário
-                        await refetch();
-
-                        toast.success("Foto removida", {
-                          description:
-                            "Sua foto de perfil foi removida com sucesso.",
-                        });
-                      } catch (error) {
-                        toast.error("Erro ao remover foto", {
-                          description:
-                            "Ocorreu um erro ao remover sua foto de perfil.",
-                        });
-                      } finally {
-                        setUploadingImage(false);
-                      }
-                    }}
-                    disabled={uploadingImage || !user?.avatar}
-                  >
-                    Remover
-                  </Button>
-                </div>
-              </div>
+              <ProfileImageUpload user={user} onSuccess={refetch} />
             </CardContent>
           </Card>
 
@@ -401,57 +210,17 @@ export default function ProfilePage() {
                 Atualize suas informações pessoais
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome completo</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={profileData.name}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={profileData.email}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={profileData.phone}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              {/* Campo de biografia removido */}
+            <CardContent>
+              <PersonalInfoForm
+                initialData={{
+                  name: user.name,
+                  email: user.email,
+                  phone: user.phone || "",
+                }}
+                onSave={handleUpdatePersonalInfo}
+                isLoading={isLoading}
+              />
             </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveProfile} disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar Alterações
-                  </>
-                )}
-              </Button>
-            </CardFooter>
           </Card>
 
           <Card>
@@ -461,260 +230,46 @@ export default function ProfilePage() {
                 Atualize seu endereço de correspondência
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="address">Endereço</Label>
-                <Input
-                  id="address"
-                  name="address"
-                  value={profileData.address}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="city">Cidade</Label>
-                  <Input
-                    id="city"
-                    name="city"
-                    value={profileData.city}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="state">Estado</Label>
-                  <Input
-                    id="state"
-                    name="state"
-                    value={profileData.state}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="zipCode">CEP</Label>
-                  <Input
-                    id="zipCode"
-                    name="zipCode"
-                    value={profileData.zipCode}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="country">País</Label>
-                  <Input
-                    id="country"
-                    name="country"
-                    value={profileData.country}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
+            <CardContent>
+              <AddressForm
+                address={
+                  user.addresses && user.addresses.length > 0
+                    ? user.addresses[0]
+                    : {}
+                }
+                onSave={handleUpdateAddress}
+                isLoading={isLoading}
+              />
             </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveProfile} disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar Alterações
-                  </>
-                )}
-              </Button>
-            </CardFooter>
           </Card>
         </TabsContent>
 
         <TabsContent value="preferences" className="space-y-6 pt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Preferências de Idioma e Moeda</CardTitle>
+              <CardTitle>Preferências</CardTitle>
               <CardDescription>
-                Defina suas preferências de idioma e moeda
+                Personalize sua experiência no site
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="language">Idioma</Label>
-                  <select
-                    id="language"
-                    name="language"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={profileData.preferences.language}
-                    onChange={(e) =>
-                      setProfileData((prev) => ({
-                        ...prev,
-                        preferences: {
-                          ...prev.preferences,
-                          language: e.target.value,
-                        },
-                      }))
-                    }
-                  >
-                    <option value="pt-BR">Português (Brasil)</option>
-                    <option value="en-US">English (United States)</option>
-                    <option value="es-ES">Español</option>
-                    <option value="fr-FR">Français</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Moeda</Label>
-                  <select
-                    id="currency"
-                    name="currency"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={profileData.preferences.currency}
-                    onChange={(e) =>
-                      setProfileData((prev) => ({
-                        ...prev,
-                        preferences: {
-                          ...prev.preferences,
-                          currency: e.target.value,
-                        },
-                      }))
-                    }
-                  >
-                    <option value="BRL">Real Brasileiro (R$)</option>
-                    <option value="USD">US Dollar ($)</option>
-                    <option value="EUR">Euro (€)</option>
-                    <option value="GBP">British Pound (£)</option>
-                  </select>
-                </div>
-              </div>
+            <CardContent>
+              <PreferencesForm
+                preferences={
+                  user.preferences || {
+                    newsletter: false,
+                    notifications: {
+                      email: true,
+                      push: true,
+                      sms: false,
+                    },
+                    currency: "BRL",
+                    language: "pt-BR",
+                  }
+                }
+                onSave={handleUpdatePreferences}
+                isLoading={isLoading}
+              />
             </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveProfile} disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Globe className="mr-2 h-4 w-4" />
-                    Salvar Preferências
-                  </>
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Preferências de Notificação</CardTitle>
-              <CardDescription>
-                Escolha como e quando deseja receber notificações
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="email-notifications">
-                      Notificações por Email
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receba atualizações importantes por email
-                    </p>
-                  </div>
-                  <Switch
-                    id="email-notifications"
-                    checked={profileData.preferences.notifications.email}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange("email", checked)
-                    }
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="push-notifications">
-                      Notificações Push
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receba notificações em tempo real no seu dispositivo
-                    </p>
-                  </div>
-                  <Switch
-                    id="push-notifications"
-                    checked={profileData.preferences.notifications.push}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange("push", checked)
-                    }
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="sms-notifications">
-                      Notificações por SMS
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receba alertas importantes por SMS
-                    </p>
-                  </div>
-                  <Switch
-                    id="sms-notifications"
-                    checked={profileData.preferences.notifications.sms}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange("sms", checked)
-                    }
-                  />
-                </div>
-
-                <Separator />
-
-                {/* Campo de promoções removido pois não existe no tipo User */}
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="newsletter">Newsletter</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receba nossa newsletter com dicas de viagem e novidades
-                    </p>
-                  </div>
-                  <Switch
-                    id="newsletter"
-                    checked={profileData.preferences.newsletter}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange("newsletter", checked)
-                    }
-                  />
-                </div>
-
-                <Separator />
-
-                {/* Campo de lembretes de viagem removido pois não existe no tipo User */}
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveProfile} disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Bell className="mr-2 h-4 w-4" />
-                    Salvar Preferências
-                  </>
-                )}
-              </Button>
-            </CardFooter>
           </Card>
         </TabsContent>
 
@@ -726,49 +281,9 @@ export default function ProfilePage() {
                 Atualize sua senha para manter sua conta segura
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">Senha Atual</Label>
-                <Input
-                  id="current-password"
-                  type="password"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="new-password">Nova Senha</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  placeholder="••••••••"
-                />
-              </div>
+            <CardContent>
+              <SecurityForm userId={user.$id} />
             </CardContent>
-            <CardFooter>
-              <Button onClick={handleChangePassword} disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Alterando...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="mr-2 h-4 w-4" />
-                    Alterar Senha
-                  </>
-                )}
-              </Button>
-            </CardFooter>
           </Card>
 
           <Card>
@@ -784,132 +299,19 @@ export default function ProfilePage() {
                   <div>
                     <p className="font-medium">Este dispositivo</p>
                     <p className="text-sm text-muted-foreground">
-                      Windows • Chrome • São Paulo, Brasil
+                      Navegador • {new Date().toLocaleDateString()}
                     </p>
                   </div>
                   <Button variant="outline" size="sm" disabled>
                     Sessão Atual
                   </Button>
                 </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">iPhone 13</p>
-                    <p className="text-sm text-muted-foreground">
-                      iOS • Safari • São Paulo, Brasil • Última atividade: 2
-                      dias atrás
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      toast.success("Sessão encerrada", {
-                        description:
-                          "A sessão no iPhone 13 foi encerrada com sucesso.",
-                      });
-                    }}
-                  >
-                    Encerrar
-                  </Button>
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">MacBook Pro</p>
-                    <p className="text-sm text-muted-foreground">
-                      macOS • Firefox • Rio de Janeiro, Brasil • Última
-                      atividade: 1 semana atrás
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      toast.success("Sessão encerrada", {
-                        description:
-                          "A sessão no MacBook Pro foi encerrada com sucesso.",
-                      });
-                    }}
-                  >
-                    Encerrar
-                  </Button>
-                </div>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  toast.success("Sessões encerradas", {
-                    description:
-                      "Todas as outras sessões foram encerradas com sucesso.",
-                  });
-                }}
-              >
-                Encerrar Todas as Outras Sessões
-              </Button>
-            </CardFooter>
           </Card>
         </TabsContent>
 
         <TabsContent value="account" className="space-y-6 pt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dados da Conta</CardTitle>
-              <CardDescription>
-                Gerencie suas informações de conta e preferências
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Exportar Dados</p>
-                  <p className="text-sm text-muted-foreground">
-                    Baixe uma cópia de todos os seus dados
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    toast.info("Exportação iniciada", {
-                      description:
-                        "Seus dados estão sendo preparados para download.",
-                    });
-                  }}
-                >
-                  Exportar
-                </Button>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Histórico de Atividades</p>
-                  <p className="text-sm text-muted-foreground">
-                    Visualize o histórico de atividades da sua conta
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    toast.info("Funcionalidade em desenvolvimento", {
-                      description:
-                        "O histórico de atividades será implementado em breve.",
-                    });
-                  }}
-                >
-                  Visualizar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <CardTitle className="text-destructive">Zona de Perigo</CardTitle>
@@ -918,6 +320,18 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  <p className="font-medium text-destructive">Atenção</p>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  A exclusão da sua conta é permanente e irá remover todos os
+                  seus dados, incluindo reservas, favoritos e preferências. Esta
+                  ação não pode ser desfeita.
+                </p>
+              </div>
+
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Excluir Conta</p>
@@ -930,17 +344,7 @@ export default function ProfilePage() {
                   onClick={handleDeleteAccount}
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Excluindo...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Excluir Conta
-                    </>
-                  )}
+                  {isLoading ? "Excluindo..." : "Excluir Conta"}
                 </Button>
               </div>
             </CardContent>

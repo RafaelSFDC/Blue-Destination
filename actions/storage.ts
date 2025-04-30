@@ -1,6 +1,6 @@
 "use server";
 
-import { createSessionClient } from "@/lib/appwrite";
+import { createSessionClient, COLLECTIONS } from "@/lib/appwrite";
 import { ID } from "appwrite";
 
 /**
@@ -12,7 +12,7 @@ export async function uploadImage(file: File): Promise<string> {
   try {
     // Criar um ID único para o arquivo
     const fileId = ID.unique();
-    
+
     // Fazer upload do arquivo
     const result = await client.storage.createFile(
       process.env.NEXT_PUBLIC_APPWRITE_STORAGE_ID!,
@@ -56,18 +56,21 @@ export async function deleteImage(fileId: string): Promise<boolean> {
 /**
  * Atualiza a imagem de perfil do usuário
  */
-export async function updateProfileImage(userId: string, imageUrl: string): Promise<boolean> {
+export async function updateProfileImage(
+  userId: string,
+  imageUrl: string
+): Promise<boolean> {
   const client = await createSessionClient();
 
   try {
     // Atualizar o documento do usuário
     await client.databases.updateDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
-      process.env.NEXT_PUBLIC_COLLECTION_USERS!,
+      COLLECTIONS.USERS,
       userId,
       {
         avatar: imageUrl,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       }
     );
 
@@ -77,4 +80,3 @@ export async function updateProfileImage(userId: string, imageUrl: string): Prom
     throw new Error("Erro ao atualizar a imagem de perfil. Tente novamente.");
   }
 }
-

@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MainNav } from "@/components/main-nav";
 import { UserNav } from "@/components/user-nav";
-import { Notifications } from "@/components/notifications";
+import { NotificationsDropdown } from "@/components/notifications-dropdown";
 
 export function SiteHeader() {
   return (
@@ -24,7 +24,7 @@ export function SiteHeader() {
               </Link>
             </Button>
           </div>
-          <Notifications />
+          <NotificationsDropdown />
           <UserNav />
         </div>
       </div>

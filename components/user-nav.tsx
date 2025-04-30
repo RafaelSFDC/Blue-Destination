@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import type React from "react"
-import Link from "next/link"
-import { useSnapshot } from "valtio"
-import { state, actions } from "@/lib/store"
-import { Button } from "@/components/ui/button"
+import type React from "react";
+import Link from "next/link";
+import { useSnapshot } from "valtio";
+import { state, actions } from "@/lib/store";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,18 +12,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { User, Heart, BookMarked, Settings } from "lucide-react"
-import { Notifications } from "@/components/notifications"
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User, Heart, BookMarked, Settings } from "lucide-react";
 
 export function UserNav() {
-  const snap = useSnapshot(state)
+  const snap = useSnapshot(state);
 
   const handleLogout = (e: React.MouseEvent) => {
-    e.preventDefault()
-    actions.logout()
-  }
+    e.preventDefault();
+    actions.logout();
+  };
 
   if (!snap.auth.user?.isLoggedIn) {
     return (
@@ -35,20 +34,18 @@ export function UserNav() {
           <Link href="/register">Cadastrar</Link>
         </Button>
       </>
-    )
+    );
   }
 
   return (
     <div className="flex items-center gap-2">
-      <Notifications />
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-8 w-8">
-              <AvatarImage 
-                src={snap.auth.user?.avatar || "/placeholder.svg"} 
-                alt={snap.auth.user?.name || "User avatar"} 
+              <AvatarImage
+                src={snap.auth.user?.avatar || "/placeholder.svg"}
+                alt={snap.auth.user?.name || "User avatar"}
               />
               <AvatarFallback>
                 <User className="h-4 w-4" />
@@ -59,8 +56,12 @@ export function UserNav() {
         <DropdownMenuContent className="w-56" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{snap.auth.user?.name}</p>
-              <p className="text-xs leading-none text-muted-foreground">{snap.auth.user?.email}</p>
+              <p className="text-sm font-medium leading-none">
+                {snap.auth.user?.name}
+              </p>
+              <p className="text-xs leading-none text-muted-foreground">
+                {snap.auth.user?.email}
+              </p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -95,7 +96,5 @@ export function UserNav() {
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  )
+  );
 }
-
-

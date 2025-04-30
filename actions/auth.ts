@@ -163,9 +163,9 @@ export async function updateUserProfile(userId: string, data: Partial<User>) {
     };
 
     // Adicionar campos apenas se fornecidos
-    if (data.name) updateData.name = data.name;
-    if (data.avatar) updateData.avatar = data.avatar;
-    if (data.phone) updateData.phone = data.phone;
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.avatar !== undefined) updateData.avatar = data.avatar;
+    if (data.phone !== undefined) updateData.phone = data.phone;
 
     // Adicionar endereços se fornecidos
     if (data.addresses && data.addresses.length > 0) {
@@ -209,6 +209,28 @@ export async function updateUserProfile(userId: string, data: Partial<User>) {
   } catch (error) {
     console.error("Update user error:", error);
     throw new Error("Erro ao atualizar perfil. Tente novamente.");
+  }
+}
+
+/**
+ * Atualiza a senha do usuário
+ */
+export async function updateUserPassword(
+  oldPassword: string,
+  newPassword: string
+) {
+  const client = await createSessionClient();
+
+  try {
+    // Atualizar a senha do usuário
+    await client.account.updatePassword(newPassword, oldPassword);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Update password error:", error);
+    throw new Error(
+      "Erro ao atualizar senha. Verifique se a senha atual está correta."
+    );
   }
 }
 
