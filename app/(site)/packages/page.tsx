@@ -79,8 +79,6 @@ export default function PackagesPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <main className="flex-1">
         {/* Hero Section */}
         <section className="bg-primary py-16 text-white">
@@ -254,8 +252,6 @@ export default function PackagesPage() {
           </div>
         </section>
       </main>
-
-      <SiteFooter />
     </div>
   );
 }
