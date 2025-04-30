@@ -1,96 +1,94 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { StarRating } from "@/components/ui/star-rating"
-import { formatCurrency } from "@/lib/utils"
-import { getDestinations } from "@/lib/actions"
-import { MapPin, Search, ArrowLeft, X } from "lucide-react"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { StarRating } from "@/components/ui/star-rating";
+import { formatCurrency } from "@/lib/utils";
+import { getDestinations } from "@/lib/actions";
+import { MapPin, Search, ArrowLeft, X } from "lucide-react";
 
 export default function DestinationsMapPage() {
-  const [destinations, setDestinations] = useState<any[]>([])
-  const [filteredDestinations, setFilteredDestinations] = useState<any[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedDestination, setSelectedDestination] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [destinations, setDestinations] = useState<any[]>([]);
+  const [filteredDestinations, setFilteredDestinations] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDestination, setSelectedDestination] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchDestinations = async () => {
       try {
-        const allDestinations = await getDestinations()
-        setDestinations(allDestinations)
-        setFilteredDestinations(allDestinations)
+        const allDestinations = await getDestinations();
+        setDestinations(allDestinations);
+        setFilteredDestinations(allDestinations);
       } catch (error) {
-        console.error("Erro ao buscar destinos:", error)
+        console.error("Erro ao buscar destinos:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchDestinations()
-  }, [])
+    fetchDestinations();
+  }, []);
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
-      setFilteredDestinations(destinations)
+      setFilteredDestinations(destinations);
     } else {
-      const query = searchQuery.toLowerCase()
+      const query = searchQuery.toLowerCase();
       const filtered = destinations.filter(
         (dest) =>
           dest.name.toLowerCase().includes(query) ||
           dest.location.toLowerCase().includes(query) ||
-          dest.tags.some((tag: string) => tag.toLowerCase().includes(query)),
-      )
-      setFilteredDestinations(filtered)
+          dest.tags.some((tag: string) => tag.toLowerCase().includes(query))
+      );
+      setFilteredDestinations(filtered);
     }
-  }, [searchQuery, destinations])
+  }, [searchQuery, destinations]);
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     // A filtragem já é feita pelo useEffect
-  }
+  };
 
   const handleClearSearch = () => {
-    setSearchQuery("")
-  }
+    setSearchQuery("");
+  };
 
   const handleDestinationClick = (destination: any) => {
-    setSelectedDestination(destination)
-  }
+    setSelectedDestination(destination);
+  };
 
   const handleCloseDestinationDetails = () => {
-    setSelectedDestination(null)
-  }
+    setSelectedDestination(null);
+  };
 
   // Função para gerar posições aleatórias para os destinos no mapa
   const getRandomPosition = (index: number) => {
     // Usando o índice para gerar posições determinísticas mas distribuídas
-    const row = Math.floor(index / 4)
-    const col = index % 4
+    const row = Math.floor(index / 4);
+    const col = index % 4;
 
     // Adicionar um pouco de aleatoriedade para não ficar em grade perfeita
-    const randomX = Math.sin(index * 7) * 5
-    const randomY = Math.cos(index * 13) * 5
+    const randomX = Math.sin(index * 7) * 5;
+    const randomY = Math.cos(index * 13) * 5;
 
     return {
       left: `${15 + col * 25 + randomX}%`,
       top: `${15 + row * 25 + randomY}%`,
-    }
-  }
+    };
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <main className="flex-1">
         <div className="container py-8">
           <div className="mb-6 flex items-center justify-between">
@@ -151,7 +149,11 @@ export default function DestinationsMapPage() {
                   <div className="flex flex-col items-center">
                     <MapPin
                       className="h-8 w-8 text-primary drop-shadow-md"
-                      fill={selectedDestination?.id === destination.id ? "currentColor" : "transparent"}
+                      fill={
+                        selectedDestination?.id === destination.id
+                          ? "currentColor"
+                          : "transparent"
+                      }
                     />
                     <span className="mt-1 rounded-full bg-white px-2 py-0.5 text-xs font-medium shadow-sm">
                       {destination.name}
@@ -180,29 +182,42 @@ export default function DestinationsMapPage() {
                       <X className="h-4 w-4" />
                     </Button>
                     {selectedDestination.featured && (
-                      <Badge className="absolute left-2 top-2 bg-primary text-white">Destaque</Badge>
+                      <Badge className="absolute left-2 top-2 bg-primary text-white">
+                        Destaque
+                      </Badge>
                     )}
                   </div>
 
                   <CardContent className="p-4">
-                    <h3 className="mb-1 text-lg font-bold">{selectedDestination.name}</h3>
+                    <h3 className="mb-1 text-lg font-bold">
+                      {selectedDestination.name}
+                    </h3>
                     <div className="mb-2 flex items-center text-sm text-muted-foreground">
                       <MapPin className="mr-1 h-4 w-4" />
                       <span>{selectedDestination.location}</span>
                     </div>
 
                     <div className="mb-2 flex items-center gap-2">
-                      <StarRating rating={selectedDestination.rating} size={16} />
+                      <StarRating
+                        rating={selectedDestination.rating}
+                        size={16}
+                      />
                       <span className="text-sm text-muted-foreground">
                         ({selectedDestination.reviewCount} avaliações)
                       </span>
                     </div>
 
-                    <p className="mb-3 text-sm text-muted-foreground line-clamp-2">{selectedDestination.description}</p>
+                    <p className="mb-3 text-sm text-muted-foreground line-clamp-2">
+                      {selectedDestination.description}
+                    </p>
 
                     <div className="mb-3 flex flex-wrap gap-1">
                       {selectedDestination.tags.map((tag: string) => (
-                        <Badge key={tag} variant="outline" className="capitalize">
+                        <Badge
+                          key={tag}
+                          variant="outline"
+                          className="capitalize"
+                        >
                           {tag}
                         </Badge>
                       ))}
@@ -211,11 +226,16 @@ export default function DestinationsMapPage() {
                     <div className="flex items-center justify-between">
                       <div className="text-lg font-bold text-primary">
                         {formatCurrency(selectedDestination.price)}
-                        <span className="text-xs text-muted-foreground"> / pessoa</span>
+                        <span className="text-xs text-muted-foreground">
+                          {" "}
+                          / pessoa
+                        </span>
                       </div>
 
                       <Button size="sm" asChild>
-                        <Link href={`/destinations/${selectedDestination.id}`}>Ver Detalhes</Link>
+                        <Link href={`/destinations/${selectedDestination.id}`}>
+                          Ver Detalhes
+                        </Link>
                       </Button>
                     </div>
                   </CardContent>
@@ -234,8 +254,12 @@ export default function DestinationsMapPage() {
             {!isLoading && filteredDestinations.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/50">
                 <div className="rounded-lg bg-background p-6 text-center shadow-lg">
-                  <h3 className="mb-2 text-lg font-medium">Nenhum destino encontrado</h3>
-                  <p className="mb-4 text-muted-foreground">Não encontramos destinos que correspondam à sua busca.</p>
+                  <h3 className="mb-2 text-lg font-medium">
+                    Nenhum destino encontrado
+                  </h3>
+                  <p className="mb-4 text-muted-foreground">
+                    Não encontramos destinos que correspondam à sua busca.
+                  </p>
                   <Button onClick={handleClearSearch}>Limpar Busca</Button>
                 </div>
               </div>
@@ -262,9 +286,15 @@ export default function DestinationsMapPage() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="text-sm font-bold text-primary">{formatCurrency(destination.price)}</div>
+                    <div className="text-sm font-bold text-primary">
+                      {formatCurrency(destination.price)}
+                    </div>
 
-                    <Button size="sm" variant="outline" onClick={() => handleDestinationClick(destination)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDestinationClick(destination)}
+                    >
                       Ver no Mapa
                     </Button>
                   </div>
@@ -274,8 +304,6 @@ export default function DestinationsMapPage() {
           </div>
         </div>
       </main>
-
-      <SiteFooter />
     </div>
-  )
+  );
 }

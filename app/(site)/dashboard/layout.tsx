@@ -1,24 +1,24 @@
-import type React from "react"
-import Link from "next/link"
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import type React from "react";
+import Link from "next/link";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   // Removido qualquer verificação de autenticação que poderia causar redirecionamento
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <div className="container py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Meu Painel</h1>
-          <p className="mt-2 text-muted-foreground">Gerencie suas reservas, preferências e informações pessoais</p>
+          <p className="mt-2 text-muted-foreground">
+            Gerencie suas reservas, preferências e informações pessoais
+          </p>
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
@@ -62,10 +62,6 @@ export default function DashboardLayout({
           {children}
         </Tabs>
       </div>
-
-      <div className="mt-auto">
-        <SiteFooter />
-      </div>
     </div>
-  )
+  );
 }

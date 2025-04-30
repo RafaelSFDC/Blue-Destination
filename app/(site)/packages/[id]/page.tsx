@@ -18,7 +18,6 @@ export default async function PackagePage({
 
   return (
     <div className="flex min-h-screen flex-col pb-12">
-      <SiteHeader />
       <main className="flex-1">
         <Suspense
           fallback={<div className="container py-12">Carregando...</div>}
@@ -26,7 +25,6 @@ export default async function PackagePage({
           <PackageDetails packageItem={packageData} />
         </Suspense>
       </main>
-      <SiteFooter />
     </div>
   );
 }

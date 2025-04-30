@@ -1,8 +1,13 @@
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function FAQPage() {
   const faqCategories = [
@@ -121,19 +126,18 @@ export default function FAQPage() {
         },
       ],
     },
-  ]
+  ];
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <main className="flex-1">
         {/* Hero Section */}
         <section className="bg-primary py-16 text-white">
           <div className="container text-center">
             <h1 className="mb-4 text-4xl font-bold">Perguntas Frequentes</h1>
             <p className="mx-auto max-w-2xl text-lg">
-              Encontre respostas para as dúvidas mais comuns sobre nossos serviços, reservas, pacotes e muito mais.
+              Encontre respostas para as dúvidas mais comuns sobre nossos
+              serviços, reservas, pacotes e muito mais.
             </p>
           </div>
         </section>
@@ -144,7 +148,9 @@ export default function FAQPage() {
             {faqCategories.map((category, index) => (
               <div key={index} className="rounded-lg border p-6">
                 <h2 className="mb-4 text-xl font-bold">{category.title}</h2>
-                <p className="mb-4 text-muted-foreground">{category.items.length} perguntas nesta categoria</p>
+                <p className="mb-4 text-muted-foreground">
+                  {category.items.length} perguntas nesta categoria
+                </p>
                 <Button asChild variant="outline" className="w-full">
                   <a href={`#category-${index}`}>Ver Perguntas</a>
                 </Button>
@@ -157,12 +163,21 @@ export default function FAQPage() {
         <section className="bg-gray-50 py-16">
           <div className="container">
             {faqCategories.map((category, categoryIndex) => (
-              <div key={categoryIndex} id={`category-${categoryIndex}`} className="mb-12">
+              <div
+                key={categoryIndex}
+                id={`category-${categoryIndex}`}
+                className="mb-12"
+              >
                 <h2 className="mb-6 text-2xl font-bold">{category.title}</h2>
                 <Accordion type="single" collapsible className="w-full">
                   {category.items.map((item, itemIndex) => (
-                    <AccordionItem key={itemIndex} value={`item-${categoryIndex}-${itemIndex}`}>
-                      <AccordionTrigger className="text-left">{item.question}</AccordionTrigger>
+                    <AccordionItem
+                      key={itemIndex}
+                      value={`item-${categoryIndex}-${itemIndex}`}
+                    >
+                      <AccordionTrigger className="text-left">
+                        {item.question}
+                      </AccordionTrigger>
                       <AccordionContent>
                         <p className="text-muted-foreground">{item.answer}</p>
                       </AccordionContent>
@@ -177,10 +192,12 @@ export default function FAQPage() {
         {/* Contact CTA */}
         <section className="container py-16">
           <div className="rounded-lg border bg-white p-8 text-center shadow-sm">
-            <h2 className="mb-4 text-2xl font-bold">Não encontrou o que procurava?</h2>
+            <h2 className="mb-4 text-2xl font-bold">
+              Não encontrou o que procurava?
+            </h2>
             <p className="mx-auto mb-6 max-w-2xl text-muted-foreground">
-              Nossa equipe está pronta para responder a todas as suas dúvidas. Entre em contato conosco e teremos prazer
-              em ajudar.
+              Nossa equipe está pronta para responder a todas as suas dúvidas.
+              Entre em contato conosco e teremos prazer em ajudar.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
               <Button asChild>
@@ -193,8 +210,6 @@ export default function FAQPage() {
           </div>
         </section>
       </main>
-
-      <SiteFooter />
     </div>
-  )
+  );
 }

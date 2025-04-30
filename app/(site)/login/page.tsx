@@ -1,100 +1,103 @@
-"use client"
+"use client";
 
-import type { AuthResult } from "@/lib/types"
-import { useState } from "react"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
-import { actions } from "@/lib/store"
-import { authenticateUser } from "@/lib/actions"
-import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Separator } from "@/components/ui/separator"
+import { useState } from "react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { actions } from "@/lib/store";
+import { authenticateUser } from "@/lib/actions";
+import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
-  const { toast } = useToast()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const demoLogin = async (type: "user" | "admin") => {
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const email = type === "admin" ? "admin@example.com" : "joao@example.com"
-      const result = await authenticateUser(email, "password")
+      const email = type === "admin" ? "admin@example.com" : "joao@example.com";
+      const result = await authenticateUser(email, "password");
 
       if (result.success && result.user) {
-        actions.login(result.user)
+        actions.login(result.user);
 
         toast({
           title: "Login de demonstração",
-          description: `Logado como ${type === "admin" ? "administrador" : "usuário"}.`,
-        })
+          description: `Logado como ${
+            type === "admin" ? "administrador" : "usuário"
+          }.`,
+        });
       } else {
         toast({
           title: "Erro ao fazer login",
           description: result.message || "Credenciais inválidas",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
       toast({
         title: "Erro ao fazer login",
-        description: "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
+        description:
+          "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!email || !password) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const result = await authenticateUser(email, password)
+      const result = await authenticateUser(email, password);
 
       if (result.success && result.user) {
-        actions.login(result.user)
+        actions.login(result.user);
 
         toast({
           title: "Login realizado com sucesso",
           description: `Bem-vindo(a) de volta, ${result.user.name}!`,
-        })
+        });
       } else {
         toast({
           title: "Erro ao fazer login",
           description: result.message || "Credenciais inválidas",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
       toast({
         title: "Erro ao fazer login",
-        description: "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
+        description:
+          "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -102,11 +105,11 @@ export default function LoginPage() {
         <div className="grid w-full max-w-[900px] grid-cols-1 overflow-hidden rounded-lg border shadow-lg md:grid-cols-2">
           {/* Imagem lateral */}
           <div className="relative hidden md:block">
-            <Image 
-              src="/placeholder.svg?height=800&width=600" 
-              alt="Login" 
-              fill 
-              className="object-cover" 
+            <Image
+              src="/placeholder.svg?height=800&width=600"
+              alt="Login"
+              fill
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-primary/60 p-8 text-white">
               <div className="flex h-full flex-col justify-between">
@@ -115,7 +118,10 @@ export default function LoginPage() {
                   <p className="mt-2">Sua próxima aventura começa aqui</p>
                 </div>
                 <div>
-                  <p className="text-sm opacity-90">"Viajar é a única coisa que você compra que te deixa mais rico."</p>
+                  <p className="text-sm opacity-90">
+                    "Viajar é a única coisa que você compra que te deixa mais
+                    rico."
+                  </p>
                 </div>
               </div>
             </div>
@@ -125,7 +131,9 @@ export default function LoginPage() {
           <div className="p-8">
             <div className="mb-6 text-center">
               <h1 className="text-2xl font-bold">Bem-vindo(a) de volta</h1>
-              <p className="mt-2 text-muted-foreground">Entre com suas credenciais para acessar sua conta</p>
+              <p className="mt-2 text-muted-foreground">
+                Entre com suas credenciais para acessar sua conta
+              </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -144,7 +152,10 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Senha</Label>
-                  <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-primary hover:underline"
+                  >
                     Esqueceu a senha?
                   </Link>
                 </div>
@@ -171,7 +182,9 @@ export default function LoginPage() {
                     ) : (
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     )}
-                    <span className="sr-only">{showPassword ? "Esconder senha" : "Mostrar senha"}</span>
+                    <span className="sr-only">
+                      {showPassword ? "Esconder senha" : "Mostrar senha"}
+                    </span>
                   </Button>
                 </div>
               </div>
@@ -206,15 +219,25 @@ export default function LoginPage() {
                   <Separator />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Ou continue com
+                  </span>
                 </div>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => demoLogin("user")} disabled={isLoading}>
+                <Button
+                  variant="outline"
+                  onClick={() => demoLogin("user")}
+                  disabled={isLoading}
+                >
                   Login como Usuário
                 </Button>
-                <Button variant="outline" onClick={() => demoLogin("admin")} disabled={isLoading}>
+                <Button
+                  variant="outline"
+                  onClick={() => demoLogin("admin")}
+                  disabled={isLoading}
+                >
                   Login como Admin
                 </Button>
               </div>
@@ -222,7 +245,10 @@ export default function LoginPage() {
 
             <div className="mt-6 text-center text-sm">
               Não tem uma conta?{" "}
-              <Link href="/register" className="font-medium text-primary hover:underline">
+              <Link
+                href="/register"
+                className="font-medium text-primary hover:underline"
+              >
                 Cadastre-se
               </Link>
             </div>
@@ -230,10 +256,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-
-
-
-
-

@@ -1,53 +1,74 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import type { Package } from "@/lib/mock-data"
-import Link from "next/link"
-import Image from "next/image"
-import { Check, X, ChevronDown, ChevronUp, Plus, Trash2, ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { StarRating } from "@/components/ui/star-rating"
-import { formatCurrency, calculateDiscountedPrice } from "@/lib/utils"
-import { getPackages } from "@/lib/actions"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
+import { useState, useEffect } from "react";
+import type { Package } from "@/lib/mock-data";
+import Link from "next/link";
+import Image from "next/image";
+import {
+  Check,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Trash2,
+  ArrowLeft,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { StarRating } from "@/components/ui/star-rating";
+import { formatCurrency, calculateDiscountedPrice } from "@/lib/utils";
+import { getPackages } from "@/lib/actions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function ComparePage() {
-  const { toast } = useToast()
-  const [packages, setPackages] = useState<Package[]>([])
-  const [selectedPackages, setSelectedPackages] = useState<string[]>([])
-  const [expandedSections, setExpandedSections] = useState<string[]>(["basic", "inclusions"])
-  const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast();
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
+  const [expandedSections, setExpandedSections] = useState<string[]>([
+    "basic",
+    "inclusions",
+  ]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchPackages = async () => {
       try {
-        const allPackages = await getPackages()
-        setPackages(allPackages)
+        const allPackages = await getPackages();
+        setPackages(allPackages);
 
         // Pré-selecionar os dois primeiros pacotes para comparação
         if (allPackages.length >= 2) {
-          setSelectedPackages([allPackages[0].id, allPackages[1].id])
+          setSelectedPackages([allPackages[0].id, allPackages[1].id]);
         } else if (allPackages.length === 1) {
-          setSelectedPackages([allPackages[0].id])
+          setSelectedPackages([allPackages[0].id]);
         }
       } catch (error) {
-        console.error("Erro ao buscar pacotes:", error)
+        console.error("Erro ao buscar pacotes:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchPackages()
-  }, [])
+    fetchPackages();
+  }, []);
 
   const toggleSection = (section: string) => {
-    setExpandedSections((prev) => (prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section]))
-  }
+    setExpandedSections((prev) =>
+      prev.includes(section)
+        ? prev.filter((s) => s !== section)
+        : [...prev, section]
+    );
+  };
 
   const handleAddPackage = () => {
     if (selectedPackages.length >= 3) {
@@ -55,54 +76,54 @@ export default function ComparePage() {
         title: "Limite atingido",
         description: "Você pode comparar no máximo 3 pacotes simultaneamente.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    const availablePackages = packages.filter((pkg) => !selectedPackages.includes(pkg.id))
+    const availablePackages = packages.filter(
+      (pkg) => !selectedPackages.includes(pkg.id)
+    );
     if (availablePackages.length > 0) {
-      setSelectedPackages([...selectedPackages, availablePackages[0].id])
+      setSelectedPackages([...selectedPackages, availablePackages[0].id]);
     }
-  }
+  };
 
   const handleRemovePackage = (packageId: string | undefined) => {
-    if (!packageId) return
-    setSelectedPackages((prev) => prev.filter((id) => id !== packageId))
-  }
+    if (!packageId) return;
+    setSelectedPackages((prev) => prev.filter((id) => id !== packageId));
+  };
 
   const handleChangePackage = (index: number, newPackageId: string) => {
-    const newSelectedPackages = [...selectedPackages]
-    newSelectedPackages[index] = newPackageId
-    setSelectedPackages(newSelectedPackages)
-  }
+    const newSelectedPackages = [...selectedPackages];
+    newSelectedPackages[index] = newPackageId;
+    setSelectedPackages(newSelectedPackages);
+  };
 
   const getSelectedPackagesData = () => {
-    return selectedPackages.map((id) => packages.find((pkg) => pkg.id === id))
-  }
+    return selectedPackages.map((id) => packages.find((pkg) => pkg.id === id));
+  };
 
-  const selectedPackagesData = getSelectedPackagesData()
+  const selectedPackagesData = getSelectedPackagesData();
 
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col">
-        <SiteHeader />
         <main className="container flex-1 py-12">
           <div className="flex h-96 items-center justify-center">
             <div className="text-center">
               <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
-              <p className="text-lg font-medium">Carregando pacotes para comparação...</p>
+              <p className="text-lg font-medium">
+                Carregando pacotes para comparação...
+              </p>
             </div>
           </div>
         </main>
-        <SiteFooter />
       </div>
-    )
+    );
   }
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <main className="container flex-1 py-12">
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -117,7 +138,10 @@ export default function ComparePage() {
 
           <Button
             onClick={handleAddPackage}
-            disabled={selectedPackages.length >= 3 || packages.length <= selectedPackages.length}
+            disabled={
+              selectedPackages.length >= 3 ||
+              packages.length <= selectedPackages.length
+            }
           >
             <Plus className="mr-2 h-4 w-4" />
             Adicionar Pacote
@@ -127,7 +151,8 @@ export default function ComparePage() {
         <div className="mb-8 grid grid-cols-4 gap-4">
           {/* Coluna de categorias */}
           <div className="space-y-4">
-            <div className="h-[300px]"></div> {/* Espaço para alinhar com os cards */}
+            <div className="h-[300px]"></div>{" "}
+            {/* Espaço para alinhar com os cards */}
             {/* Informações básicas */}
             <div className="rounded-lg border p-4">
               <button
@@ -144,10 +169,18 @@ export default function ComparePage() {
 
               {expandedSections.includes("basic") && (
                 <div className="mt-4 space-y-4">
-                  <p className="text-sm font-medium text-muted-foreground">Preço</p>
-                  <p className="text-sm font-medium text-muted-foreground">Duração</p>
-                  <p className="text-sm font-medium text-muted-foreground">Destinos</p>
-                  <p className="text-sm font-medium text-muted-foreground">Avaliação</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Preço
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Duração
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Destinos
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Avaliação
+                  </p>
                 </div>
               )}
             </div>
@@ -167,13 +200,27 @@ export default function ComparePage() {
 
               {expandedSections.includes("inclusions") && (
                 <div className="mt-4 space-y-4">
-                  <p className="text-sm font-medium text-muted-foreground">Passagens aéreas</p>
-                  <p className="text-sm font-medium text-muted-foreground">Hospedagem</p>
-                  <p className="text-sm font-medium text-muted-foreground">Café da manhã</p>
-                  <p className="text-sm font-medium text-muted-foreground">Traslados</p>
-                  <p className="text-sm font-medium text-muted-foreground">Passeios guiados</p>
-                  <p className="text-sm font-medium text-muted-foreground">Seguro viagem</p>
-                  <p className="text-sm font-medium text-muted-foreground">Assistência 24h</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Passagens aéreas
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Hospedagem
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Café da manhã
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Traslados
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Passeios guiados
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Seguro viagem
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Assistência 24h
+                  </p>
                 </div>
               )}
             </div>
@@ -193,10 +240,18 @@ export default function ComparePage() {
 
               {expandedSections.includes("itinerary") && (
                 <div className="mt-4 space-y-4">
-                  <p className="text-sm font-medium text-muted-foreground">Dias de viagem</p>
-                  <p className="text-sm font-medium text-muted-foreground">Principais atrações</p>
-                  <p className="text-sm font-medium text-muted-foreground">Tempo livre</p>
-                  <p className="text-sm font-medium text-muted-foreground">Atividades opcionais</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Dias de viagem
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Principais atrações
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Tempo livre
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Atividades opcionais
+                  </p>
                 </div>
               )}
             </div>
@@ -216,9 +271,15 @@ export default function ComparePage() {
 
               {expandedSections.includes("cancellation") && (
                 <div className="mt-4 space-y-4">
-                  <p className="text-sm font-medium text-muted-foreground">Cancelamento gratuito</p>
-                  <p className="text-sm font-medium text-muted-foreground">Reembolso parcial</p>
-                  <p className="text-sm font-medium text-muted-foreground">Sem reembolso</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Cancelamento gratuito
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Reembolso parcial
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Sem reembolso
+                  </p>
                 </div>
               )}
             </div>
@@ -251,7 +312,9 @@ export default function ComparePage() {
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted">
-                      <p className="text-muted-foreground">Selecione um pacote</p>
+                      <p className="text-muted-foreground">
+                        Selecione um pacote
+                      </p>
                     </div>
                   )}
 
@@ -270,7 +333,12 @@ export default function ComparePage() {
 
                 <CardContent className="p-4">
                   <div className="mb-4">
-                    <Select value={packageData?.id || ""} onValueChange={(value) => handleChangePackage(index, value)}>
+                    <Select
+                      value={packageData?.id || ""}
+                      onValueChange={(value) =>
+                        handleChangePackage(index, value)
+                      }
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecione um pacote" />
                       </SelectTrigger>
@@ -279,7 +347,10 @@ export default function ComparePage() {
                           <SelectItem
                             key={pkg.id}
                             value={pkg.id}
-                            disabled={selectedPackages.includes(pkg.id) && pkg.id !== packageData?.id}
+                            disabled={
+                              selectedPackages.includes(pkg.id) &&
+                              pkg.id !== packageData?.id
+                            }
                           >
                             {pkg.name}
                           </SelectItem>
@@ -290,22 +361,35 @@ export default function ComparePage() {
 
                   {packageData && (
                     <>
-                      <h3 className="mb-2 text-lg font-bold">{packageData.name}</h3>
-                      <p className="mb-4 text-sm text-muted-foreground line-clamp-3">{packageData.description}</p>
+                      <h3 className="mb-2 text-lg font-bold">
+                        {packageData.name}
+                      </h3>
+                      <p className="mb-4 text-sm text-muted-foreground line-clamp-3">
+                        {packageData.description}
+                      </p>
 
                       {packageData.discount ? (
                         <div className="flex items-center gap-2">
                           <span className="text-lg font-bold text-primary">
-                            {formatCurrency(calculateDiscountedPrice(packageData.price, packageData.discount))}
+                            {formatCurrency(
+                              calculateDiscountedPrice(
+                                packageData.price,
+                                packageData.discount
+                              )
+                            )}
                           </span>
                           <span className="text-sm text-muted-foreground line-through">
                             {formatCurrency(packageData.price)}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-lg font-bold text-primary">{formatCurrency(packageData.price)}</span>
+                        <span className="text-lg font-bold text-primary">
+                          {formatCurrency(packageData.price)}
+                        </span>
                       )}
-                      <p className="text-xs text-muted-foreground">por pessoa</p>
+                      <p className="text-xs text-muted-foreground">
+                        por pessoa
+                      </p>
                     </>
                   )}
                 </CardContent>
@@ -313,7 +397,9 @@ export default function ComparePage() {
                 <CardFooter className="p-4 pt-0">
                   {packageData && (
                     <Button className="w-full" asChild>
-                      <Link href={`/packages/${packageData.id}`}>Ver Detalhes</Link>
+                      <Link href={`/packages/${packageData.id}`}>
+                        Ver Detalhes
+                      </Link>
                     </Button>
                   )}
                 </CardFooter>
@@ -327,14 +413,21 @@ export default function ComparePage() {
                     {packageData.discount ? (
                       <div className="flex items-center gap-1">
                         <span className="font-medium text-primary">
-                          {formatCurrency(calculateDiscountedPrice(packageData.price, packageData.discount))}
+                          {formatCurrency(
+                            calculateDiscountedPrice(
+                              packageData.price,
+                              packageData.discount
+                            )
+                          )}
                         </span>
                         <span className="text-xs text-muted-foreground line-through">
                           {formatCurrency(packageData.price)}
                         </span>
                       </div>
                     ) : (
-                      <p className="font-medium">{formatCurrency(packageData.price)}</p>
+                      <p className="font-medium">
+                        {formatCurrency(packageData.price)}
+                      </p>
                     )}
                   </div>
 
@@ -352,7 +445,9 @@ export default function ComparePage() {
                     <p className="text-sm font-medium">Avaliação</p>
                     <div className="flex items-center gap-1">
                       <StarRating rating={4.5} size={16} />
-                      <span className="text-sm text-muted-foreground">(87 avaliações)</span>
+                      <span className="text-sm text-muted-foreground">
+                        (87 avaliações)
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -372,11 +467,15 @@ export default function ComparePage() {
 
                   <div>
                     <p className="text-sm font-medium">Hospedagem</p>
-                    {packageData.inclusions.some((inc: string) => inc.includes("Hospedagem")) ? (
+                    {packageData.inclusions.some((inc: string) =>
+                      inc.includes("Hospedagem")
+                    ) ? (
                       <div className="flex items-center gap-1">
                         <Check className="h-5 w-5 text-green-500" />
                         <Badge variant="outline">
-                          {packageData.inclusions.find((inc: string) => inc.includes("Hospedagem"))?.replace("Hospedagem ", "")}
+                          {packageData.inclusions
+                            .find((inc: string) => inc.includes("Hospedagem"))
+                            ?.replace("Hospedagem ", "")}
                         </Badge>
                       </div>
                     ) : (
@@ -453,7 +552,9 @@ export default function ComparePage() {
                   <div>
                     <p className="text-sm font-medium">Tempo livre</p>
                     <p className="text-sm">
-                      {packageData.itinerary.some((day) => day.title.toLowerCase().includes("livre")) ? (
+                      {packageData.itinerary.some((day) =>
+                        day.title.toLowerCase().includes("livre")
+                      ) ? (
                         <Check className="h-5 w-5 text-green-500" />
                       ) : (
                         <X className="h-5 w-5 text-red-500" />
@@ -464,7 +565,9 @@ export default function ComparePage() {
                   <div>
                     <p className="text-sm font-medium">Atividades opcionais</p>
                     <p className="text-sm">
-                      {packageData.itinerary.some((day) => day.description.toLowerCase().includes("opcional")) ? (
+                      {packageData.itinerary.some((day) =>
+                        day.description.toLowerCase().includes("opcional")
+                      ) ? (
                         <Check className="h-5 w-5 text-green-500" />
                       ) : (
                         <X className="h-5 w-5 text-red-500" />
@@ -497,23 +600,31 @@ export default function ComparePage() {
           ))}
 
           {/* Coluna para adicionar pacote */}
-          {selectedPackages.length < 3 && selectedPackages.length < packages.length && (
-            <div className="flex items-center justify-center">
-              <Button variant="outline" className="h-[300px] w-full border-dashed" onClick={handleAddPackage}>
-                <div className="flex flex-col items-center gap-2">
-                  <Plus className="h-8 w-8" />
-                  <span>Adicionar Pacote</span>
-                </div>
-              </Button>
-            </div>
-          )}
+          {selectedPackages.length < 3 &&
+            selectedPackages.length < packages.length && (
+              <div className="flex items-center justify-center">
+                <Button
+                  variant="outline"
+                  className="h-[300px] w-full border-dashed"
+                  onClick={handleAddPackage}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <Plus className="h-8 w-8" />
+                    <span>Adicionar Pacote</span>
+                  </div>
+                </Button>
+              </div>
+            )}
         </div>
 
         <div className="mt-12 rounded-lg border bg-muted/20 p-6">
-          <h2 className="mb-4 text-xl font-bold">Precisa de ajuda para decidir?</h2>
+          <h2 className="mb-4 text-xl font-bold">
+            Precisa de ajuda para decidir?
+          </h2>
           <p className="mb-6 text-muted-foreground">
-            Nossa equipe de especialistas está pronta para ajudar você a escolher o pacote perfeito para suas
-            necessidades. Entre em contato conosco para obter assistência personalizada.
+            Nossa equipe de especialistas está pronta para ajudar você a
+            escolher o pacote perfeito para suas necessidades. Entre em contato
+            conosco para obter assistência personalizada.
           </p>
           <div className="flex flex-wrap gap-4">
             <Button asChild>
@@ -523,10 +634,6 @@ export default function ComparePage() {
           </div>
         </div>
       </main>
-
-      <SiteFooter />
     </div>
-  )
+  );
 }
-
-

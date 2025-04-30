@@ -19,8 +19,6 @@ export default async function Search({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <main className="flex-1">
         <div className="container py-8">
           <Suspense fallback={<SearchSkeleton />}>
@@ -71,8 +69,6 @@ export default async function Search({
           </Suspense>
         </div>
       </main>
-
-      <SiteFooter />
     </div>
   );
 }

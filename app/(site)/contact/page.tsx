@@ -1,22 +1,22 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/components/ui/use-toast"
-import { MapPin, Phone, Mail, Clock, Send, Loader2 } from "lucide-react"
+import { useState } from "react";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/components/ui/use-toast";
+import { MapPin, Phone, Mail, Clock, Send, Loader2 } from "lucide-react";
 
 export default function ContactPage() {
-  const { toast } = useToast()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -24,32 +24,34 @@ export default function ContactPage() {
     subject: "general",
     message: "",
     newsletter: false,
-  })
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleRadioChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, subject: value }))
-  }
+    setFormData((prev) => ({ ...prev, subject: value }));
+  };
 
   const handleCheckboxChange = (checked: boolean) => {
-    setFormData((prev) => ({ ...prev, newsletter: checked }))
-  }
+    setFormData((prev) => ({ ...prev, newsletter: checked }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    setIsSubmitting(true);
 
     // Simulação de envio
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     toast({
       title: "Mensagem enviada com sucesso!",
       description: "Agradecemos seu contato. Responderemos em breve.",
-    })
+    });
 
     setFormData({
       name: "",
@@ -58,22 +60,21 @@ export default function ContactPage() {
       subject: "general",
       message: "",
       newsletter: false,
-    })
+    });
 
-    setIsSubmitting(false)
-  }
+    setIsSubmitting(false);
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <main className="flex-1">
         {/* Hero Section */}
         <section className="bg-primary py-16 text-white">
           <div className="container text-center">
             <h1 className="mb-4 text-4xl font-bold">Entre em Contato</h1>
             <p className="mx-auto max-w-2xl text-lg">
-              Estamos aqui para ajudar! Envie-nos uma mensagem e nossa equipe responderá o mais breve possível.
+              Estamos aqui para ajudar! Envie-nos uma mensagem e nossa equipe
+              responderá o mais breve possível.
             </p>
           </div>
         </section>
@@ -82,7 +83,9 @@ export default function ContactPage() {
         <section className="container py-16">
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
-              <h2 className="mb-6 text-2xl font-bold">Envie-nos uma mensagem</h2>
+              <h2 className="mb-6 text-2xl font-bold">
+                Envie-nos uma mensagem
+              </h2>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -128,7 +131,11 @@ export default function ContactPage() {
 
                 <div className="space-y-2">
                   <Label>Assunto</Label>
-                  <RadioGroup value={formData.subject} onValueChange={handleRadioChange} disabled={isSubmitting}>
+                  <RadioGroup
+                    value={formData.subject}
+                    onValueChange={handleRadioChange}
+                    disabled={isSubmitting}
+                  >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="general" id="general" />
                       <Label htmlFor="general" className="font-normal">
@@ -182,7 +189,11 @@ export default function ContactPage() {
                   </Label>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -199,14 +210,18 @@ export default function ContactPage() {
             </div>
 
             <div>
-              <h2 className="mb-6 text-2xl font-bold">Informações de Contato</h2>
+              <h2 className="mb-6 text-2xl font-bold">
+                Informações de Contato
+              </h2>
 
               <div className="mb-8 space-y-4">
                 <div className="flex items-start">
                   <MapPin className="mr-3 mt-1 h-5 w-5 text-primary" />
                   <div>
                     <h3 className="font-medium">Endereço</h3>
-                    <p className="text-muted-foreground">Av. Paulista, 1000, São Paulo - SP, Brasil</p>
+                    <p className="text-muted-foreground">
+                      Av. Paulista, 1000, São Paulo - SP, Brasil
+                    </p>
                   </div>
                 </div>
 
@@ -222,7 +237,9 @@ export default function ContactPage() {
                   <Mail className="mr-3 mt-1 h-5 w-5 text-primary" />
                   <div>
                     <h3 className="font-medium">Email</h3>
-                    <p className="text-muted-foreground">contato@bluedestination.com</p>
+                    <p className="text-muted-foreground">
+                      contato@bluedestination.com
+                    </p>
                   </div>
                 </div>
 
@@ -230,7 +247,9 @@ export default function ContactPage() {
                   <Clock className="mr-3 mt-1 h-5 w-5 text-primary" />
                   <div>
                     <h3 className="font-medium">Horário de Atendimento</h3>
-                    <p className="text-muted-foreground">Segunda a Sexta: 9h às 18h</p>
+                    <p className="text-muted-foreground">
+                      Segunda a Sexta: 9h às 18h
+                    </p>
                     <p className="text-muted-foreground">Sábado: 9h às 13h</p>
                   </div>
                 </div>
@@ -252,7 +271,9 @@ export default function ContactPage() {
         {/* FAQ Section */}
         <section className="bg-gray-50 py-16">
           <div className="container">
-            <h2 className="mb-8 text-center text-2xl font-bold">Perguntas Frequentes</h2>
+            <h2 className="mb-8 text-center text-2xl font-bold">
+              Perguntas Frequentes
+            </h2>
 
             <div className="mx-auto max-w-3xl space-y-4">
               {[
@@ -286,8 +307,6 @@ export default function ContactPage() {
           </div>
         </section>
       </main>
-
-      <SiteFooter />
     </div>
-  )
+  );
 }

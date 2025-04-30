@@ -28,8 +28,6 @@ export default async function DestinationPage({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <main className="flex-1">
         {/* Hero Section */}
         <section className="relative flex min-h-[500px] items-center justify-center bg-gray-900 py-12 text-white">
@@ -192,8 +190,6 @@ export default async function DestinationPage({
           </div>
         </section>
       </main>
-
-      <SiteFooter />
     </div>
   );
 }
