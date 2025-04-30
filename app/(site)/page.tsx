@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { SearchForm } from "@/components/search-form";
 import { DestinationCard } from "@/components/destination-card";
 import { PackageCard } from "@/components/package-card";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
+
 import TestimonialsCarousel from "@/components/testimonials-carousel";
 import { Package } from "@/lib/types";
 import { getFeaturedDestinations } from "@/actions/destinations";
@@ -20,8 +19,6 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       {/* Hero Section */}
       <section className="relative flex min-h-[600px] items-center justify-center bg-gray-900 py-12 text-white">
         <div className="absolute inset-0 z-0">
@@ -272,8 +269,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
-      <SiteFooter />
     </div>
   );
 }

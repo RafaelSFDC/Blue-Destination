@@ -1,28 +1,27 @@
-import Link from "next/link"
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DestinationCard } from "@/components/destination-card"
-import { getDestinations, getAvailableRegions } from "@/lib/actions"
-import { Search, MapPin, Globe } from "lucide-react"
+import Link from "next/link";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DestinationCard } from "@/components/destination-card";
+import { getDestinations, getAvailableRegions } from "@/lib/actions";
+import { Search, MapPin, Globe } from "lucide-react";
 
 export default async function DestinationsPage() {
-  const destinations = await getDestinations()
-  const regions = await getAvailableRegions()
+  const destinations = await getDestinations();
+  const regions = await getAvailableRegions();
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <main className="flex-1">
         {/* Hero Section */}
         <section className="bg-primary py-16 text-white">
           <div className="container text-center">
             <h1 className="mb-4 text-4xl font-bold">Destinos</h1>
             <p className="mx-auto max-w-2xl text-lg">
-              Descubra lugares incríveis ao redor do mundo e comece a planejar sua próxima aventura.
+              Descubra lugares incríveis ao redor do mundo e comece a planejar
+              sua próxima aventura.
             </p>
           </div>
         </section>
@@ -62,7 +61,10 @@ export default async function DestinationsPage() {
             <TabsContent value="all">
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {destinations.map((destination) => (
-                  <DestinationCard key={destination.id} destination={destination} />
+                  <DestinationCard
+                    key={destination.id}
+                    destination={destination}
+                  />
                 ))}
               </div>
             </TabsContent>
@@ -72,7 +74,10 @@ export default async function DestinationsPage() {
                 {destinations
                   .filter((destination) => destination.featured)
                   .map((destination) => (
-                    <DestinationCard key={destination.id} destination={destination} />
+                    <DestinationCard
+                      key={destination.id}
+                      destination={destination}
+                    />
                   ))}
               </div>
             </TabsContent>
@@ -83,7 +88,10 @@ export default async function DestinationsPage() {
                   {destinations
                     .filter((destination) => destination.region === region)
                     .map((destination) => (
-                      <DestinationCard key={destination.id} destination={destination} />
+                      <DestinationCard
+                        key={destination.id}
+                        destination={destination}
+                      />
                     ))}
                 </div>
               </TabsContent>
@@ -94,9 +102,12 @@ export default async function DestinationsPage() {
         {/* CTA Section */}
         <section className="bg-primary py-16 text-white">
           <div className="container text-center">
-            <h2 className="mb-4 text-3xl font-bold">Não encontrou o que procura?</h2>
+            <h2 className="mb-4 text-3xl font-bold">
+              Não encontrou o que procura?
+            </h2>
             <p className="mx-auto mb-8 max-w-2xl text-lg">
-              Entre em contato com nossa equipe e criaremos um roteiro personalizado para você.
+              Entre em contato com nossa equipe e criaremos um roteiro
+              personalizado para você.
             </p>
             <Button variant="secondary" size="lg" asChild>
               <Link href="/contact">Fale Conosco</Link>
@@ -104,8 +115,6 @@ export default async function DestinationsPage() {
           </div>
         </section>
       </main>
-
-      <SiteFooter />
     </div>
-  )
+  );
 }
