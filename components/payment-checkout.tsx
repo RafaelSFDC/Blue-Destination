@@ -3,12 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CreditCard, Loader2 } from "lucide-react";
+import { CreditCard, Loader2, Check, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/utils";
-import { createStripeCheckoutSession, checkPaymentStatus } from "@/actions/payment";
+import {
+  createStripeCheckoutSession,
+  checkPaymentStatus,
+} from "@/actions/payment";
 
 interface PaymentCheckoutProps {
   bookingId: string;
@@ -17,7 +27,12 @@ interface PaymentCheckoutProps {
   travelers: number;
 }
 
-export function PaymentCheckout({ bookingId, packageName, totalPrice, travelers }: PaymentCheckoutProps) {
+export function PaymentCheckout({
+  bookingId,
+  packageName,
+  totalPrice,
+  travelers,
+}: PaymentCheckoutProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,26 +40,26 @@ export function PaymentCheckout({ bookingId, packageName, totalPrice, travelers 
   const handleCheckout = async () => {
     try {
       setIsLoading(true);
-      
+
       // Verificar se já existe uma sessão de pagamento
       const paymentStatus = await checkPaymentStatus(bookingId);
-      
+
       if (paymentStatus.status === "paid") {
         toast.success("Pagamento já realizado", {
           description: "Esta reserva já foi paga com sucesso.",
         });
         return;
       }
-      
+
       // Se já existe uma sessão, redirecionar para ela
       if (paymentStatus.status !== "not_started" && paymentStatus.url) {
         window.location.href = paymentStatus.url;
         return;
       }
-      
+
       // Criar nova sessão de checkout
       const result = await createStripeCheckoutSession(bookingId);
-      
+
       if (result.success && result.url) {
         // Redirecionar para a página de checkout do Stripe
         window.location.href = result.url;
@@ -52,7 +67,8 @@ export function PaymentCheckout({ bookingId, packageName, totalPrice, travelers 
     } catch (error) {
       console.error("Erro ao processar pagamento:", error);
       toast.error("Erro ao processar pagamento", {
-        description: "Não foi possível iniciar o processo de pagamento. Tente novamente.",
+        description:
+          "Não foi possível iniciar o processo de pagamento. Tente novamente.",
       });
     } finally {
       setIsLoading(false);
@@ -63,7 +79,9 @@ export function PaymentCheckout({ bookingId, packageName, totalPrice, travelers 
     <Card>
       <CardHeader>
         <CardTitle>Resumo do Pagamento</CardTitle>
-        <CardDescription>Revise os detalhes antes de prosseguir com o pagamento</CardDescription>
+        <CardDescription>
+          Revise os detalhes antes de prosseguir com o pagamento
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-lg bg-muted p-4">
@@ -84,11 +102,12 @@ export function PaymentCheckout({ bookingId, packageName, totalPrice, travelers 
             </div>
           </div>
         </div>
-        
+
         <div className="rounded-lg border p-4">
           <h3 className="mb-2 font-medium">Métodos de Pagamento</h3>
           <p className="text-sm text-muted-foreground">
-            Processamos pagamentos de forma segura através do Stripe. Você poderá escolher entre:
+            Processamos pagamentos de forma segura através do Stripe. Você
+            poderá escolher entre:
           </p>
           <ul className="mt-2 space-y-1 text-sm">
             <li className="flex items-center gap-2">
@@ -101,11 +120,22 @@ export function PaymentCheckout({ bookingId, packageName, totalPrice, travelers 
             </li>
           </ul>
         </div>
+
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
+          <h3 className="mb-2 flex items-center font-medium text-green-800 dark:text-green-300">
+            <Shield className="mr-2 h-4 w-4" />
+            Pagamento Seguro
+          </h3>
+          <p className="text-sm text-green-700 dark:text-green-400">
+            Todas as transações são criptografadas e processadas com segurança.
+            Seus dados de pagamento nunca são armazenados em nossos servidores.
+          </p>
+        </div>
       </CardContent>
       <CardFooter>
-        <Button 
-          onClick={handleCheckout} 
-          disabled={isLoading} 
+        <Button
+          onClick={handleCheckout}
+          disabled={isLoading}
           className="w-full"
         >
           {isLoading ? (

@@ -435,11 +435,67 @@ export default function BookingDetailsPage() {
                         payments[0]?.status || "pending"
                       )}`}
                     >
-                      {payments[0]?.status || "pending"}
+                      {payments[0]?.status === "paid"
+                        ? "Pago"
+                        : payments[0]?.status === "pending"
+                        ? "Pendente"
+                        : payments[0]?.status === "refunded"
+                        ? "Reembolsado"
+                        : payments[0]?.status === "failed"
+                        ? "Falhou"
+                        : "Pendente"}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {payments[0]?.status === "paid" ? (
+                    <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="mt-0.5 h-5 w-5 text-green-600 dark:text-green-400" />
+                        <div>
+                          <h3 className="font-medium text-green-800 dark:text-green-300">
+                            Pagamento confirmado
+                          </h3>
+                          <p className="mt-1 text-sm text-green-700 dark:text-green-400">
+                            Seu pagamento foi processado com sucesso. Você
+                            receberá um email com os detalhes da sua reserva.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : payments[0]?.status === "failed" ? (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
+                      <div className="flex items-start gap-3">
+                        <XCircle className="mt-0.5 h-5 w-5 text-red-600 dark:text-red-400" />
+                        <div>
+                          <h3 className="font-medium text-red-800 dark:text-red-300">
+                            Pagamento falhou
+                          </h3>
+                          <p className="mt-1 text-sm text-red-700 dark:text-red-400">
+                            Houve um problema ao processar seu pagamento. Por
+                            favor, tente novamente ou use outro método de
+                            pagamento.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900 dark:bg-yellow-950">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="mt-0.5 h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                        <div>
+                          <h3 className="font-medium text-yellow-800 dark:text-yellow-300">
+                            Pagamento pendente
+                          </h3>
+                          <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-400">
+                            Sua reserva está aguardando pagamento. Complete o
+                            pagamento para confirmar sua reserva.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">
@@ -454,14 +510,25 @@ export default function BookingDetailsPage() {
                       <p className="text-sm font-medium text-muted-foreground">
                         Data do Pagamento
                       </p>
-                      <p className="font-medium">{"Pendente"}</p>
+                      <p className="font-medium">
+                        {payments[0]?.status === "paid"
+                          ? new Date(
+                              payments[0]?.updatedAt || Date.now()
+                            ).toLocaleDateString()
+                          : "Pendente"}
+                      </p>
                     </div>
 
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">
                         Número da Transação
                       </p>
-                      <p className="font-medium">{"N/A"}</p>
+                      <p className="font-medium">
+                        {payments[0]?.providerPaymentId
+                          ? payments[0].providerPaymentId.substring(0, 8) +
+                            "..."
+                          : "N/A"}
+                      </p>
                     </div>
 
                     <div className="space-y-1">
@@ -507,7 +574,9 @@ export default function BookingDetailsPage() {
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <Button
-                    variant="outline"
+                    variant={
+                      payments[0]?.status === "paid" ? "outline" : "default"
+                    }
                     disabled={
                       payments[0]?.status === "paid" ||
                       bookingData?.status === BookingStatus.CANCELLED ||
@@ -516,7 +585,11 @@ export default function BookingDetailsPage() {
                     onClick={handlePayment}
                   >
                     <CreditCard className="mr-2 h-4 w-4" />
-                    {isLoading ? "Processando..." : "Pagar Agora"}
+                    {isLoading
+                      ? "Processando..."
+                      : payments[0]?.status === "paid"
+                      ? "Pago"
+                      : "Pagar Agora"}
                   </Button>
                   <Button
                     variant="outline"
@@ -531,50 +604,90 @@ export default function BookingDetailsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Política de Cancelamento</CardTitle>
+                  <CardDescription>
+                    Informações sobre cancelamento e reembolso
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="mt-0.5 h-4 w-4 text-green-500" />
-                      <span className="text-sm">
-                        Cancelamento gratuito até 30 dias antes da viagem
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="mt-0.5 h-4 w-4 text-yellow-500" />
-                      <span className="text-sm">
-                        Cancelamento com 70% de reembolso entre 30 e 15 dias
-                        antes da viagem
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="mt-0.5 h-4 w-4 text-orange-500" />
-                      <span className="text-sm">
-                        Cancelamento com 50% de reembolso entre 14 e 7 dias
-                        antes da viagem
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <XCircle className="mt-0.5 h-4 w-4 text-red-500" />
-                      <span className="text-sm">
-                        Sem reembolso para cancelamentos com menos de 7 dias de
-                        antecedência
-                      </span>
-                    </li>
-                  </ul>
+                <CardContent className="space-y-4">
+                  {bookingData?.status === BookingStatus.CANCELLED ? (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
+                      <div className="flex items-start gap-3">
+                        <XCircle className="mt-0.5 h-5 w-5 text-red-600 dark:text-red-400" />
+                        <div>
+                          <h3 className="font-medium text-red-800 dark:text-red-300">
+                            Reserva cancelada
+                          </h3>
+                          <p className="mt-1 text-sm text-red-700 dark:text-red-400">
+                            Esta reserva foi cancelada em{" "}
+                            {new Date(
+                              bookingData?.updatedAt || Date.now()
+                            ).toLocaleDateString()}
+                            .
+                            {payments[0]?.status === "refunded"
+                              ? " O reembolso foi processado e será creditado em sua conta em até 7 dias úteis."
+                              : " Se você realizou algum pagamento, o reembolso será processado em breve."}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <ul className="space-y-2">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="mt-0.5 h-4 w-4 text-green-500" />
+                        <span className="text-sm">
+                          Cancelamento gratuito até 30 dias antes da viagem
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="mt-0.5 h-4 w-4 text-yellow-500" />
+                        <span className="text-sm">
+                          Cancelamento com 70% de reembolso entre 30 e 15 dias
+                          antes da viagem
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="mt-0.5 h-4 w-4 text-orange-500" />
+                        <span className="text-sm">
+                          Cancelamento com 50% de reembolso entre 14 e 7 dias
+                          antes da viagem
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <XCircle className="mt-0.5 h-4 w-4 text-red-500" />
+                        <span className="text-sm">
+                          Sem reembolso para cancelamentos com menos de 7 dias
+                          de antecedência
+                        </span>
+                      </li>
+                    </ul>
+                  )}
                 </CardContent>
                 <CardFooter>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    disabled={
-                      bookingData?.status === BookingStatus.CANCELLED ||
-                      isLoading
-                    }
-                    onClick={handleCancelBooking}
-                  >
-                    {isLoading ? "Processando..." : "Solicitar Cancelamento"}
-                  </Button>
+                  {bookingData?.status !== BookingStatus.CANCELLED ? (
+                    <Button
+                      variant="outline"
+                      className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={isLoading}
+                      onClick={handleCancelBooking}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processando...
+                        </>
+                      ) : (
+                        "Solicitar Cancelamento"
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => router.push("/packages")}
+                    >
+                      Ver outros pacotes
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             </TabsContent>
