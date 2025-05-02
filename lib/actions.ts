@@ -8,7 +8,6 @@ import type {
   SearchFilters,
   Booking,
   User,
-  AuthResult,
 } from "@/lib/types";
 
 // Função para buscar todos os destinos
