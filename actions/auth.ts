@@ -48,6 +48,7 @@ export async function authenticateUser(email: string, password: string) {
 /**
  * Registra um novo usuário
  */
+
 export async function registerUser(
   email: string,
   password: string,
@@ -64,28 +65,35 @@ export async function registerUser(
       name
     );
 
-    // Fazer login automaticamente
-    await client.account.createEmailPasswordSession(email, password);
+    // Fazer login automaticamente e obter a sessão
+    const session = await client.account.createEmailPasswordSession(
+      email,
+      password
+    );
+    console.log("Session:", session); 
 
-    // Criar documento do usuário no banco de dados
-    const userDoc = await client.databases.createDocument(
+    // Criar um novo cliente com a sessão ID
+    const authenticatedClient = await createSessionClient(); // <- CORRETO É $id
+
+    // Criar documento no banco de dados com client autenticado
+    const userDoc = await authenticatedClient.databases.createDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
       COLLECTIONS.USERS,
       newUser.$id,
       {
-        email: email,
-        name: name,
+        email,
+        name,
         role: "user",
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       }
     );
-
+    // Validar e retornar o usuário
     const user = userSchema.parse({
       ...userDoc,
-      ...newUser,
       $id: newUser.$id,
-      email: newUser.email,
-      name: newUser.name,
+      email,
+      name,
       role: "user",
       avatar: null,
     });
@@ -94,9 +102,14 @@ export async function registerUser(
   } catch (error: any) {
     console.error("Registration error:", error);
 
-    // Verificar se o erro é de usuário já existente
     if (error.code === 409) {
       throw new Error("Este email já está em uso. Tente fazer login.");
+    }
+
+    if (error.code === 401) {
+      throw new Error(
+        "Erro de configuração do Appwrite. Verifique as permissões da API."
+      );
     }
 
     throw new Error("Erro ao criar conta. Tente novamente.");
@@ -121,7 +134,7 @@ export async function logoutUser() {
 /**
  * Obtém o usuário atual
  */
-export async function getCurrentUser() {
+export async function getCurrentUser({ session }: { session?: string }) {
   const client = await createSessionClient();
 
   try {

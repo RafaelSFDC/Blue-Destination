@@ -1,4 +1,6 @@
 import { Client, Account, Databases, Storage } from "appwrite";
+import { cookies } from "next/headers";
+import { userSchema } from "./schemas/user";
 
 export const createSessionClient = async (session?: string) => {
   const client = new Client();
@@ -7,6 +9,18 @@ export const createSessionClient = async (session?: string) => {
 
   if (session) {
     client.setSession(session);
+  } else if (typeof window === "undefined") {
+    try {
+      const cookieStore = await cookies();
+      console.log("Cookie store:", cookieStore.getAll());
+      const sessionCookie = cookieStore.get("auth_token");
+      if (sessionCookie) {
+        client.setSession(sessionCookie.value);
+      }
+    } catch (error) {
+      // Silenciosamente falha se não conseguir acessar cookies
+      console.log("Não foi possível acessar cookies de sessão");
+    }
   }
   return {
     get account() {
@@ -44,3 +58,53 @@ export const COLLECTIONS = {
   FAVORITES: process.env.NEXT_PUBLIC_COLLECTION_FAVORITES!,
   STORAGE: process.env.NEXT_PUBLIC_STORAGE_BUCKET_ID!,
 } as const;
+
+export const registerUser = async (
+  email: string,
+  password: string,
+  name: string
+) => {
+  const client = await createSessionClient();
+
+  try {
+    // Criar novo usuário
+    const newUser = await client.account.create(
+      "unique()",
+      email,
+      password,
+      name
+    );
+    // Fazer login automaticamente e obter a sessão
+    const session = await client.account.createEmailPasswordSession(
+      email,
+      password
+    );
+
+    // Criar documento no banco de dados com client autenticado
+    const userDoc = await client.databases.createDocument(
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+      COLLECTIONS.USERS,
+      newUser.$id,
+      {
+        email,
+        name,
+        role: "user",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+    );
+    // Validar e retornar o usuário
+    const user = userSchema.parse({
+      ...userDoc,
+      $id: newUser.$id,
+      email,
+      name,
+      role: "user",
+      avatar: null,
+    });
+    return session;
+  } catch (error) {
+    console.error("Login error:", error);
+    throw new Error("Erro ao fazer login. Tente novamente.");
+  }
+};
