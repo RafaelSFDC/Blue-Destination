@@ -99,7 +99,10 @@ function PackagesTable({ data }: { data: Package[] }) {
           </div>
         );
       },
-      filterFn: "fuzzy",
+      filterFn: (row, id, value) => {
+        const itemValue = row.getValue(id) as string;
+        return itemValue.toLowerCase().includes(value.toLowerCase());
+      },
     },
     {
       accessorKey: "duration",
