@@ -20,20 +20,20 @@ export async function createBooking({
   try {
     const client = await createSessionClient();
     const user = await getCurrentUser();
-    
+
     if (!user) {
       throw new Error("Usuário não autenticado");
     }
-    
+
     // Obter informações do pacote
     const packageData = await getPackageById(packageId);
     if (!packageData) {
       throw new Error("Pacote não encontrado");
     }
-    
+
     // Calcular preço total
     const totalPrice = packageData.price * travelers;
-    
+
     // Criar nova reserva
     const booking = await client.databases.createDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
@@ -48,14 +48,30 @@ export async function createBooking({
         travelers: travelers,
         totalPrice: totalPrice,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       }
     );
-    
+
     return { success: true, bookingId: booking.$id };
   } catch (error) {
     console.error("Error creating booking:", error);
     throw new Error("Erro ao criar reserva. Tente novamente.");
+  }
+}
+
+export async function getAllBookings() {
+  try {
+    const client = await createSessionClient();
+
+    const bookings = await client.databases.listDocuments(
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+      COLLECTIONS.BOOKINGS
+    );
+
+    return bookings.documents;
+  } catch (error) {
+    console.error("Error fetching all bookings:", error);
+    throw new Error("Erro ao buscar todas as reservas. Tente novamente.");
   }
 }
 
@@ -66,20 +82,17 @@ export async function getUserBookings() {
   try {
     const client = await createSessionClient();
     const user = await getCurrentUser();
-    
+
     if (!user) {
       throw new Error("Usuário não autenticado");
     }
-    
+
     const bookings = await client.databases.listDocuments(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
       COLLECTIONS.BOOKINGS,
-      [
-        Query.equal("user", user.$id),
-        Query.orderDesc("createdAt")
-      ]
+      [Query.equal("user", user.$id), Query.orderDesc("createdAt")]
     );
-    
+
     return bookings.documents;
   } catch (error) {
     console.error("Error fetching user bookings:", error);
@@ -94,22 +107,22 @@ export async function getBookingById(bookingId: string) {
   try {
     const client = await createSessionClient();
     const user = await getCurrentUser();
-    
+
     if (!user) {
       throw new Error("Usuário não autenticado");
     }
-    
+
     const booking = await client.databases.getDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
       COLLECTIONS.BOOKINGS,
       bookingId
     );
-    
+
     // Verificar se a reserva pertence ao usuário atual
     if (booking.user.$id !== user.$id) {
       throw new Error("Acesso não autorizado");
     }
-    
+
     return booking;
   } catch (error) {
     console.error("Error fetching booking:", error);
@@ -124,22 +137,22 @@ export async function cancelBooking(bookingId: string) {
   try {
     const client = await createSessionClient();
     const user = await getCurrentUser();
-    
+
     if (!user) {
       throw new Error("Usuário não autenticado");
     }
-    
+
     // Verificar se a reserva pertence ao usuário atual
     const booking = await client.databases.getDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
       COLLECTIONS.BOOKINGS,
       bookingId
     );
-    
+
     if (booking.user.$id !== user.$id) {
       throw new Error("Acesso não autorizado");
     }
-    
+
     // Atualizar status da reserva
     await client.databases.updateDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
@@ -147,10 +160,10 @@ export async function cancelBooking(bookingId: string) {
       bookingId,
       {
         status: "cancelled",
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       }
     );
-    
+
     return { success: true };
   } catch (error) {
     console.error("Error cancelling booking:", error);
