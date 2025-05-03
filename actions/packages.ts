@@ -35,14 +35,19 @@ export async function getFeaturedPackages({ limit }: { limit?: number }) {
 export async function getPackageById(id: string) {
   const client = await createSessionClient();
 
-  const response = await client.databases.getDocument(
-    process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
-    COLLECTIONS.PACKAGES,
-    id
-  );
+  try {
+    const response = await client.databases.getDocument(
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+      COLLECTIONS.PACKAGES,
+      id
+    );
 
-  const packageItem = packageSchema.parse(response);
-  return packageItem;
+    const packageItem = packageSchema.parse(response);
+    return packageItem;
+  } catch (error) {
+    console.error("Error fetching package:", error);
+    return null;
+  }
 }
 
 /**

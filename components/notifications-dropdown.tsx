@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Check, CheckCheck, X } from "lucide-react";
+import { Bell, Check, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,99 +16,66 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "@/actions/notifications";
+import { markNotificationAsRead, markAllNotificationsAsRead } from "@/actions/notifications";
 import { formatDateFns } from "@/lib/utils";
-
-interface Notification {
-  $id: string;
-  title: string;
-  message: string;
-  type: "info" | "success" | "warning" | "error";
-  read: boolean;
-  createdAt: string;
-}
+import { useUser } from "@/querys/useUser";
 
 export function NotificationsDropdown() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: user, isLoading, refetch } = useUser();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Buscar notificações quando o dropdown for aberto
-  useEffect(() => {
-    if (isOpen) {
-      fetchNotifications();
-    }
-  }, [isOpen]);
-
-  // Função para buscar notificações
-  const fetchNotifications = async () => {
-    try {
-      setIsLoading(true);
-      const data = await getUserNotifications();
-      setNotifications(data);
-    } catch (error) {
-      console.error("Erro ao buscar notificações:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Função para marcar uma notificação como lida
-  const handleMarkAsRead = async (notificationId: string, e: React.MouseEvent) => {
+  const handleMarkAsRead = async (notificationId, e) => {
     e.stopPropagation();
-    
     try {
       await markNotificationAsRead(notificationId);
-      
-      // Atualizar o estado local
-      setNotifications(prev => 
-        prev.map(notification => 
-          notification.$id === notificationId 
-            ? { ...notification, read: true } 
-            : notification
-        )
-      );
+      // Atualizar os dados do usuário após marcar como lida
+      refetch();
+      toast.success("Notificação marcada como lida");
     } catch (error) {
       console.error("Erro ao marcar notificação como lida:", error);
+      toast.error("Erro ao marcar notificação como lida");
     }
   };
 
   // Função para marcar todas as notificações como lidas
-  const handleMarkAllAsRead = async () => {
+  const handleMarkAllAsRead = async (e) => {
+    e.stopPropagation();
     try {
-      const result = await markAllNotificationsAsRead();
-      
-      if (result.success) {
-        // Atualizar o estado local
-        setNotifications(prev => 
-          prev.map(notification => ({ ...notification, read: true }))
-        );
-        
-        toast.success(`${result.count} notificações marcadas como lidas`);
-      }
+      await markAllNotificationsAsRead();
+      // Atualizar os dados do usuário após marcar todas como lidas
+      refetch();
+      toast.success("Todas as notificações foram marcadas como lidas");
     } catch (error) {
       console.error("Erro ao marcar todas notificações como lidas:", error);
-      toast.error("Erro ao marcar notificações como lidas");
+      toast.error("Erro ao marcar todas notificações como lidas");
     }
   };
 
-  // Contar notificações não lidas
-  const unreadCount = notifications.filter(notification => !notification.read).length;
-
-  // Função para obter a cor do badge baseado no tipo da notificação
-  const getNotificationColor = (type: string) => {
+  // Função para obter a cor do badge baseado no tipo de notificação
+  const getNotificationColor = (type) => {
     switch (type) {
+      case "info":
+        return "text-blue-600 bg-blue-100";
       case "success":
-        return "bg-green-100 text-green-800";
+        return "text-green-600 bg-green-100";
       case "warning":
-        return "bg-yellow-100 text-yellow-800";
+        return "text-yellow-600 bg-yellow-100";
       case "error":
-        return "bg-red-100 text-red-800";
+        return "text-red-600 bg-red-100";
       default:
-        return "bg-blue-100 text-blue-800";
+        return "text-gray-600 bg-gray-100";
     }
   };
+
+  // Se o usuário não estiver logado ou estiver carregando, não mostrar nada
+  if (isLoading || !user) {
+    return null;
+  }
+
+  const notifications = user.notifications || [];
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -142,11 +109,7 @@ export function NotificationsDropdown() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {isLoading ? (
-          <div className="flex justify-center py-4">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-          </div>
-        ) : notifications.length === 0 ? (
+        {notifications.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground">
             <Bell className="mx-auto mb-2 h-8 w-8 opacity-50" />
             <p>Nenhuma notificação</p>
@@ -156,7 +119,7 @@ export function NotificationsDropdown() {
             <DropdownMenuGroup>
               {notifications.map((notification) => (
                 <DropdownMenuItem
-                  key={notification.$id}
+                  key={notification.id}
                   className={`flex flex-col items-start p-3 ${!notification.read ? 'bg-muted/50' : ''}`}
                   onClick={() => router.push('/dashboard/notifications')}
                 >
@@ -176,7 +139,7 @@ export function NotificationsDropdown() {
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6"
-                        onClick={(e) => handleMarkAsRead(notification.$id, e)}
+                        onClick={(e) => handleMarkAsRead(notification.id, e)}
                       >
                         <Check className="h-3 w-3" />
                         <span className="sr-only">Marcar como lida</span>
@@ -189,7 +152,7 @@ export function NotificationsDropdown() {
                   </p>
                   
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {formatDateFns(notification.createdAt, "dd MMM, HH:mm")}
+                    {formatDateFns(notification.date, "dd MMM, HH:mm")}
                   </p>
                 </DropdownMenuItem>
               ))}
@@ -208,3 +171,4 @@ export function NotificationsDropdown() {
     </DropdownMenu>
   );
 }
+
