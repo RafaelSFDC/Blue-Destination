@@ -30,12 +30,55 @@ import useDestinations from "@/querys/useDestinations";
 import usePackages from "@/querys/usePackages";
 import { useUsers } from "@/querys/useUsers";
 import { useMemo } from "react";
+import { SalesChart } from "@/components/admin/sales-chart";
+import { addDays, format, subDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // Interface para os destinos populares
 interface PopularDestination {
   id: string;
   name: string;
   popularity: number;
+}
+
+// Função para gerar dados de vendas dos últimos 30 dias
+function generateSalesData(bookings) {
+  const today = new Date();
+  const thirtyDaysAgo = subDays(today, 30);
+  
+  // Inicializar array com os últimos 30 dias
+  const daysArray = Array.from({ length: 30 }, (_, i) => {
+    const date = subDays(today, 29 - i);
+    return {
+      date,
+      name: format(date, "dd/MM", { locale: ptBR }),
+      total: 0,
+    };
+  });
+  
+  // Se não houver reservas, retornar o array vazio
+  if (!bookings || bookings.length === 0) {
+    return daysArray;
+  }
+  
+  // Preencher com dados reais
+  bookings.forEach(booking => {
+    // Verificar se a data da reserva está nos últimos 30 dias
+    const bookingDate = new Date(booking.createdAt);
+    if (bookingDate >= thirtyDaysAgo && bookingDate <= today) {
+      // Encontrar o índice do dia correspondente
+      const dayIndex = daysArray.findIndex(day => 
+        day.date.getDate() === bookingDate.getDate() && 
+        day.date.getMonth() === bookingDate.getMonth()
+      );
+      
+      if (dayIndex !== -1) {
+        daysArray[dayIndex].total += booking.totalPrice || 0;
+      }
+    }
+  });
+  
+  return daysArray;
 }
 
 export default function AdminDashboard() {
@@ -74,29 +117,24 @@ export default function AdminDashboard() {
       bookings?.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0) ||
       0;
 
-    // Destinos populares (baseado nas reservas)
-    const destinationCounts: Record<string, number> = {};
-    bookings?.forEach((booking) => {
-      if (booking.packages?.destinations) {
-        booking.packages.destinations.forEach((dest: any) => {
-          const destId = typeof dest === "object" ? dest.$id : dest;
-          destinationCounts[destId] = (destinationCounts[destId] || 0) + 1;
-        });
+    // Destinos populares (contagem de reservas por destino)
+    const destinationBookingCounts = bookings?.reduce((counts, booking) => {
+      // Verificar se booking.destinationId existe
+      if (booking.destinationId) {
+        counts[booking.destinationId] = (counts[booking.destinationId] || 0) + 1;
       }
-    });
+      return counts;
+    }, {});
 
-    // Converter para array e ordenar
-    const popularDestinations: PopularDestination[] = Object.entries(
-      destinationCounts
-    )
+    const popularDestinations = Object.entries(destinationBookingCounts || {})
       .map(([id, count]) => {
         const destination = destinations?.find(
-          (d: any) => d.$id === id || d.id === id
+          (d) => d.$id === id || d.id === id
         );
         return {
           id,
           name: destination?.name || "Destino desconhecido",
-          popularity: Math.round((count / bookingsCount) * 100) || 0,
+          popularity: bookingsCount > 0 ? Math.round((count / bookingsCount) * 100) : 0,
         };
       })
       .sort((a, b) => b.popularity - a.popularity)
@@ -252,8 +290,14 @@ export default function AdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pl-2">
-                <div className="h-[300px] w-full bg-muted/20 rounded-md flex items-center justify-center text-muted-foreground">
-                  Gráfico de Vendas
+                <div className="h-[300px] w-full">
+                  {isLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <Skeleton className="h-[250px] w-full" />
+                    </div>
+                  ) : (
+                    <SalesChart data={generateSalesData(bookings)} />
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -261,36 +305,45 @@ export default function AdminDashboard() {
             <Card className="col-span-3">
               <CardHeader>
                 <CardTitle>Destinos Populares</CardTitle>
-                <CardDescription>Top destinos mais vendidos</CardDescription>
+                <CardDescription>
+                  Os destinos mais reservados pelos clientes
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                ) : stats?.popularDestinations?.length > 0 ? (
                   <div className="space-y-4">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <div key={i} className="flex items-center">
-                        <Skeleton className="h-4 w-[46px] mr-2" />
-                        <Skeleton className="h-4 w-full" />
+                    {stats.popularDestinations.map((destination) => (
+                      <div key={destination.id} className="flex items-center">
+                        <div className="w-[60%] space-y-1">
+                          <p className="text-sm font-medium leading-none">
+                            {destination.name}
+                          </p>
+                        </div>
+                        <div className="ml-auto flex w-[40%] items-center">
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full bg-primary"
+                              style={{ width: `${destination.popularity}%` }}
+                            />
+                          </div>
+                          <span className="ml-2 text-sm font-medium">
+                            {destination.popularity}%
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {stats?.popularDestinations?.map(
-                      (destination: PopularDestination, i) => (
-                        <div key={destination.id} className="flex items-center">
-                          <div className="w-[46px] text-sm font-medium">
-                            #{i + 1}
-                          </div>
-                          <div className="flex-1 font-medium">
-                            {destination.name}
-                          </div>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            {destination.popularity}%
-                            <ArrowUpRight className="ml-1 h-4 w-4 text-green-500" />
-                          </div>
-                        </div>
-                      )
-                    )}
+                  <div className="flex h-[140px] items-center justify-center text-muted-foreground">
+                    Nenhum dado disponível
                   </div>
                 )}
               </CardContent>
