@@ -14,36 +14,30 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { deletePackage } from "@/actions/packages";
+import { toast as sonnerToast } from "sonner";
 
-export default async function DeletePackagePage({
+export default function DeletePackagePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const packageId = await params;
-
   const handleDelete = async () => {
     setIsDeleting(true);
 
     try {
-      // Simulação de exclusão
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await deletePackage(params.id);
 
-      toast({
-        title: "Pacote excluído",
-        description: "O pacote foi excluído com sucesso.",
-      });
+      sonnerToast.success("Pacote excluído com sucesso");
 
       router.push("/admin/packages");
     } catch (error) {
-      toast({
-        title: "Erro ao excluir",
-        description: "Ocorreu um erro ao excluir o pacote.",
-        variant: "destructive",
+      sonnerToast.error("Erro ao excluir pacote", {
+        description: "Ocorreu um erro ao excluir o pacote. Tente novamente.",
       });
     } finally {
       setIsDeleting(false);
@@ -54,7 +48,7 @@ export default async function DeletePackagePage({
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Button variant="outline" size="icon" asChild>
-          <Link href={`/admin/packages/${packageId.id}`}>
+          <Link href={`/admin/packages/${params.id}`}>
             <ArrowLeft className="h-4 w-4" />
             <span className="sr-only">Voltar</span>
           </Link>
@@ -76,7 +70,7 @@ export default async function DeletePackagePage({
         <CardContent>
           <p>
             Você está prestes a excluir o pacote com ID:{" "}
-            <strong>{packageId.id}</strong>
+            <strong>{params.id}</strong>
           </p>
           <p className="mt-4 text-muted-foreground">
             Antes de excluir, verifique se não há reservas ativas para este
@@ -86,7 +80,7 @@ export default async function DeletePackagePage({
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" asChild>
-            <Link href={`/admin/packages/${packageId.id}`}>Cancelar</Link>
+            <Link href={`/admin/packages/${params.id}`}>Cancelar</Link>
           </Button>
           <Button
             variant="destructive"

@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Edit, Trash2, Plus, Eye, Tag, Clock, MapPin, Search, Filter } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Plus,
+  Eye,
+  Tag,
+  Clock,
+  MapPin,
+  Search,
+  Filter,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -60,19 +70,22 @@ function PackagesTable({ data }: { data: Package[] }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Filtro global por nome
   useEffect(() => {
     if (searchQuery) {
-      setColumnFilters(prev => {
-        const newFilters = prev.filter(filter => filter.id !== "name");
-        return [...newFilters, {
-          id: "name",
-          value: searchQuery
-        }];
+      setColumnFilters((prev) => {
+        const newFilters = prev.filter((filter) => filter.id !== "name");
+        return [
+          ...newFilters,
+          {
+            id: "name",
+            value: searchQuery,
+          },
+        ];
       });
     } else {
-      setColumnFilters(prev => prev.filter(filter => filter.id !== "name"));
+      setColumnFilters((prev) => prev.filter((filter) => filter.id !== "name"));
     }
   }, [searchQuery]);
 
@@ -204,9 +217,11 @@ function PackagesTable({ data }: { data: Package[] }) {
                 <span className="sr-only">Editar</span>
               </Link>
             </Button>
-            <Button variant="ghost" size="icon">
-              <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Excluir</span>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href={`/admin/packages/${pkg.$id}/delete`}>
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Excluir</span>
+              </Link>
             </Button>
           </div>
         );
@@ -279,17 +294,25 @@ function PackagesTable({ data }: { data: Package[] }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
-                checked={table.getColumn("featured")?.getFilterValue() as boolean}
+                checked={
+                  table.getColumn("featured")?.getFilterValue() as boolean
+                }
                 onCheckedChange={(value) => {
-                  table.getColumn("featured")?.setFilterValue(value || undefined);
+                  table
+                    .getColumn("featured")
+                    ?.setFilterValue(value || undefined);
                 }}
               >
                 Apenas Destaques
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
-                checked={table.getColumn("hasDiscount")?.getFilterValue() as boolean}
+                checked={
+                  table.getColumn("hasDiscount")?.getFilterValue() as boolean
+                }
                 onCheckedChange={(value) => {
-                  table.getColumn("hasDiscount")?.setFilterValue(value || undefined);
+                  table
+                    .getColumn("hasDiscount")
+                    ?.setFilterValue(value || undefined);
                 }}
               >
                 Com Desconto
@@ -352,13 +375,15 @@ function PackagesTable({ data }: { data: Package[] }) {
 
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          Mostrando {table.getFilteredRowModel().rows.length} de {data.length} pacotes
+          Mostrando {table.getFilteredRowModel().rows.length} de {data.length}{" "}
+          pacotes
         </div>
-        
-        {(searchQuery || columnFilters.some(filter => filter.id !== "name")) && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+
+        {(searchQuery ||
+          columnFilters.some((filter) => filter.id !== "name")) && (
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => {
               setSearchQuery("");
               setColumnFilters([]);

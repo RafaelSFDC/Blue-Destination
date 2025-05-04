@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/use-toast";
 import { toast as sonnerToast } from "sonner";
-import { createPackage } from "@/actions/packages";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -39,6 +37,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import useDestinations from "@/querys/useDestinations";
 import useTags from "@/querys/useTags";
+import { getPackageById, updatePackage } from "@/actions/packages";
 
 // Definindo o schema de validação
 const packageSchema = z.object({
@@ -68,9 +67,14 @@ const packageSchema = z.object({
 
 type PackageFormValues = z.infer<typeof packageSchema>;
 
-export default function NewPackagePage() {
+export default function EditPackagePage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const router = useRouter();
-  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const { data: destinations = [], isLoading: isLoadingDestinations } =
     useDestinations();
   const { data: tags = [], isLoading: isLoadingTags } = useTags();
@@ -99,12 +103,64 @@ export default function NewPackagePage() {
     defaultValues,
   });
 
-  const [isSaving, setIsSaving] = useState(false);
+  // Carregar dados do pacote
+  useEffect(() => {
+    const loadPackage = async () => {
+      try {
+        setIsLoading(true);
+        const packageData = await getPackageById(params.id);
+        
+        if (!packageData) {
+          sonnerToast.error("Pacote não encontrado");
+          router.push("/admin/packages");
+          return;
+        }
+
+        // Mapear os dados do pacote para o formulário
+        form.reset({
+          name: packageData.name,
+          description: packageData.description,
+          imageUrl: packageData.imageUrl,
+          price: packageData.price,
+          duration: packageData.duration,
+          destinations: packageData.destinations.map((dest: any) => dest.$id || dest),
+          tags: packageData.tags.map((tag: any) => tag.$id || tag),
+          featured: packageData.featured,
+          discount: packageData.discounts?.[0]?.value || 0,
+          inclusions: packageData.inclusions.map((inc: any) => inc.name || inc),
+          itinerary: packageData.itinerarys?.map((item: any) => ({
+            day: item.day,
+            title: item.title,
+            description: item.description,
+          })) || [{ day: 1, title: "", description: "" }],
+        });
+
+        // Atualizar estados locais
+        setInclusions(packageData.inclusions.map((inc: any) => inc.name || inc));
+        setItinerary(
+          packageData.itinerarys?.map((item: any) => ({
+            day: item.day,
+            title: item.title,
+            description: item.description,
+          })) || [{ day: 1, title: "", description: "" }]
+        );
+      } catch (error) {
+        console.error("Error loading package:", error);
+        sonnerToast.error("Erro ao carregar pacote", {
+          description: "Não foi possível carregar os dados do pacote.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPackage();
+  }, [params.id, router, form]);
 
   const onSubmit = async (data: PackageFormValues) => {
     try {
       setIsSaving(true);
-      await createPackage({
+      await updatePackage(params.id, {
         name: data.name,
         description: data.description,
         imageUrl: data.imageUrl,
@@ -118,12 +174,12 @@ export default function NewPackagePage() {
         itinerary: data.itinerary,
       });
 
-      sonnerToast.success("Pacote criado com sucesso");
-      router.push("/admin/packages");
+      sonnerToast.success("Pacote atualizado com sucesso");
+      router.push(`/admin/packages/${params.id}`);
     } catch (error) {
-      console.error("Error creating package:", error);
-      sonnerToast.error("Erro ao criar pacote", {
-        description: "Ocorreu um erro ao criar o pacote. Tente novamente.",
+      console.error("Error updating package:", error);
+      sonnerToast.error("Erro ao atualizar pacote", {
+        description: "Ocorreu um erro ao atualizar o pacote. Tente novamente.",
       });
     } finally {
       setIsSaving(false);
@@ -187,17 +243,28 @@ export default function NewPackagePage() {
     form.setValue("itinerary", newItinerary);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Carregando pacote...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" asChild>
-            <Link href="/admin/packages">
+            <Link href={`/admin/packages/${params.id}`}>
               <ArrowLeft className="h-4 w-4" />
               <span className="sr-only">Voltar</span>
             </Link>
           </Button>
-          <h2 className="text-3xl font-bold tracking-tight">Novo Pacote</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Editar Pacote</h2>
         </div>
       </div>
 
@@ -597,16 +664,16 @@ export default function NewPackagePage() {
 
           <div className="flex justify-end gap-4">
             <Button variant="outline" asChild>
-              <Link href="/admin/packages">Cancelar</Link>
+              <Link href={`/admin/packages/${params.id}`}>Cancelar</Link>
             </Button>
             <Button type="submit" disabled={isSaving}>
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Criando...
+                  Salvando...
                 </>
               ) : (
-                "Criar Pacote"
+                "Salvar Alterações"
               )}
             </Button>
           </div>
