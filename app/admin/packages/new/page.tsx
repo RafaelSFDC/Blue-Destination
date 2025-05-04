@@ -114,7 +114,11 @@ export default function NewPackagePage() {
         tags: data.tags,
         featured: data.featured,
         discounts: data.discount ? [{ value: data.discount }] : [],
-        inclusions: data.inclusions,
+        // Verificar se inclusions é um array de strings ou objetos
+        inclusions: data.inclusions.map((inc: any) =>
+          typeof inc === "string" ? inc : inc.name || inc
+        ),
+        // O itinerary é gerenciado separadamente na função createPackage
         itinerary: data.itinerary,
       });
 

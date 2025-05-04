@@ -64,7 +64,7 @@ export async function createPackage(packageData: {
   tags: string[]; // IDs das tags
   featured: boolean;
   discount?: string; // ID do desconto (relação com Discounts)
-  discounts?: string[]; // IDs dos descontos (relação com múltiplos Discounts)
+  discounts?: any[]; // Array de objetos de desconto
   inclusions: string[]; // IDs das inclusões
   maxGuests?: number;
   excluded?: string[];
@@ -86,9 +86,12 @@ export async function createPackage(packageData: {
   const client = await createSessionClient();
 
   try {
+    // Separar o itinerário dos dados do pacote
+    const { itinerary, ...packageDataWithoutItinerary } = packageData;
+
     // Preparar dados para inserção
     const newPackage = {
-      ...packageData,
+      ...packageDataWithoutItinerary,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       // Gerar slug a partir do nome
@@ -109,9 +112,9 @@ export async function createPackage(packageData: {
     );
 
     // Se houver itinerários, criar documentos de itinerário relacionados
-    if (packageData.itinerary && packageData.itinerary.length > 0) {
+    if (itinerary && itinerary.length > 0) {
       await Promise.all(
-        packageData.itinerary.map((item) =>
+        itinerary.map((item) =>
           client.databases.createDocument(
             process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
             COLLECTIONS.ITINERARY,
@@ -176,7 +179,7 @@ export async function updatePackage(
     tags?: string[]; // IDs das tags
     featured?: boolean;
     discount?: string; // ID do desconto (relação com Discounts)
-    discounts?: string[]; // IDs dos descontos (relação com múltiplos Discounts)
+    discounts?: any[]; // Array de objetos de desconto
     inclusions?: string[]; // IDs das inclusões
     maxGuests?: number;
     excluded?: string[];
@@ -199,9 +202,12 @@ export async function updatePackage(
   const client = await createSessionClient();
 
   try {
-    // Preparar dados para atualização
+    // Preparar dados para atualização - removendo campos que não existem diretamente no documento
+    const { itinerary, ...dataToUpdate } = packageData;
+
+    // Criar uma cópia para não modificar o objeto original
     const updateData: any = {
-      ...packageData,
+      ...dataToUpdate,
       updatedAt: new Date().toISOString(),
     };
 
@@ -224,7 +230,7 @@ export async function updatePackage(
     );
 
     // Se houver itinerários, atualizar documentos de itinerário relacionados
-    if (packageData.itinerary) {
+    if (itinerary) {
       try {
         // Primeiro, excluir itinerários existentes
         const existingItineraries = await client.databases.listDocuments(
@@ -245,7 +251,7 @@ export async function updatePackage(
 
         // Criar novos itinerários
         await Promise.all(
-          packageData.itinerary.map((item) =>
+          itinerary.map((item) =>
             client.databases.createDocument(
               process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
               COLLECTIONS.ITINERARY,

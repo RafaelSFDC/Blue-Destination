@@ -109,7 +109,7 @@ export default function EditPackagePage({
       try {
         setIsLoading(true);
         const packageData = await getPackageById(params.id);
-        
+
         if (!packageData) {
           sonnerToast.error("Pacote não encontrado");
           router.push("/admin/packages");
@@ -123,7 +123,9 @@ export default function EditPackagePage({
           imageUrl: packageData.imageUrl,
           price: packageData.price,
           duration: packageData.duration,
-          destinations: packageData.destinations.map((dest: any) => dest.$id || dest),
+          destinations: packageData.destinations.map(
+            (dest: any) => dest.$id || dest
+          ),
           tags: packageData.tags.map((tag: any) => tag.$id || tag),
           featured: packageData.featured,
           discount: packageData.discounts?.[0]?.value || 0,
@@ -136,7 +138,9 @@ export default function EditPackagePage({
         });
 
         // Atualizar estados locais
-        setInclusions(packageData.inclusions.map((inc: any) => inc.name || inc));
+        setInclusions(
+          packageData.inclusions.map((inc: any) => inc.name || inc)
+        );
         setItinerary(
           packageData.itinerarys?.map((item: any) => ({
             day: item.day,
@@ -160,6 +164,7 @@ export default function EditPackagePage({
   const onSubmit = async (data: PackageFormValues) => {
     try {
       setIsSaving(true);
+      // Não enviamos o itinerary diretamente, pois ele é gerenciado separadamente
       await updatePackage(params.id, {
         name: data.name,
         description: data.description,
@@ -170,7 +175,11 @@ export default function EditPackagePage({
         tags: data.tags,
         featured: data.featured,
         discounts: data.discount ? [{ value: data.discount }] : [],
-        inclusions: data.inclusions,
+        // Verificar se inclusions é um array de strings ou objetos
+        inclusions: data.inclusions.map((inc: any) =>
+          typeof inc === "string" ? inc : inc.name || inc
+        ),
+        // O itinerary é gerenciado separadamente na função updatePackage
         itinerary: data.itinerary,
       });
 
