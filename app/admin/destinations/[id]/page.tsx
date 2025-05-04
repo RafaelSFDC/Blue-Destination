@@ -12,18 +12,19 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getDestinationById } from "@/lib/actions";
+import { getDestinationById } from "@/actions/destinations";
 import { formatCurrency } from "@/lib/utils";
 import { StarRating } from "@/components/ui/star-rating";
 import { type Destination } from "@/lib/types";
 
 interface PageProps {
-  params: Promise<{ id: string }>
+  params: { id: string };
 }
 
 export default async function DestinationDetailsPage({ params }: PageProps) {
-  const item = await params;
-  const destination = await getDestinationById(item.id) as Destination | null;
+  const destination = (await getDestinationById(
+    params.id
+  )) as Destination | null;
 
   if (!destination) {
     notFound();
@@ -45,13 +46,13 @@ export default async function DestinationDetailsPage({ params }: PageProps) {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href={`/admin/destinations/${destination.id}/edit`}>
+            <Link href={`/admin/destinations/${destination.$id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
               Editar
             </Link>
           </Button>
           <Button variant="destructive" asChild>
-            <Link href={`/admin/destinations/${destination.id}/delete`}>
+            <Link href={`/admin/destinations/${destination.$id}/delete`}>
               <Trash2 className="mr-2 h-4 w-4" />
               Excluir
             </Link>
@@ -78,6 +79,11 @@ export default async function DestinationDetailsPage({ params }: PageProps) {
               {destination.featured && (
                 <Badge className="absolute left-2 top-2 bg-blue-500 text-white">
                   Destaque
+                </Badge>
+              )}
+              {destination.popular && (
+                <Badge className="absolute left-2 top-10 bg-green-500 text-white">
+                  Popular
                 </Badge>
               )}
             </div>
@@ -116,11 +122,21 @@ export default async function DestinationDetailsPage({ params }: PageProps) {
                 <div>
                   <p className="font-medium">Tags</p>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {destination.tags.map((tag: string) => (
-                      <Badge key={tag} variant="outline" className="capitalize">
-                        {tag}
-                      </Badge>
-                    ))}
+                    {destination.tags && destination.tags.length > 0 ? (
+                      destination.tags.map((tag: any) => (
+                        <Badge
+                          key={tag.$id || tag}
+                          variant="outline"
+                          className="capitalize"
+                        >
+                          {tag.name || tag}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        Nenhuma tag
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -138,25 +154,56 @@ export default async function DestinationDetailsPage({ params }: PageProps) {
               )}
             </div>
 
+            {destination.coordinates && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="mb-2 text-lg font-medium">Coordenadas</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <p className="font-medium">Latitude</p>
+                      <p className="text-sm text-muted-foreground">
+                        {destination.coordinates.latitude}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-medium">Longitude</p>
+                      <p className="text-sm text-muted-foreground">
+                        {destination.coordinates.longitude}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
             <Separator />
 
             <div>
               <h3 className="mb-4 text-lg font-medium">Galeria</h3>
-              <div className="grid grid-cols-3 gap-4">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div
-                    key={i}
-                    className="relative aspect-square overflow-hidden rounded-md"
-                  >
-                    <Image
-                      src={`/placeholder.svg?height=200&width=200&text=Imagem+${i}`}
-                      alt={`Galeria ${destination.name} ${i}`}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
+              {destination.gallery && destination.gallery.length > 0 ? (
+                <div className="grid grid-cols-3 gap-4">
+                  {destination.gallery.map((image, i) => (
+                    <div
+                      key={i}
+                      className="relative aspect-square overflow-hidden rounded-md"
+                    >
+                      <Image
+                        src={image || "/placeholder.svg?height=200&width=200"}
+                        alt={`Galeria ${destination.name} ${i + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-md border border-dashed p-8 text-center">
+                  <p className="text-muted-foreground">
+                    Nenhuma imagem na galeria
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -191,27 +238,53 @@ export default async function DestinationDetailsPage({ params }: PageProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Estatísticas</CardTitle>
+              <CardTitle>Informações Adicionais</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between">
-                <span>Visualizações</span>
-                <span className="font-medium">2,456</span>
+                <span>ID</span>
+                <span
+                  className="font-medium text-xs max-w-[150px] truncate"
+                  title={destination.$id}
+                >
+                  {destination.$id}
+                </span>
               </div>
 
               <div className="flex justify-between">
-                <span>Pacotes relacionados</span>
-                <span className="font-medium">8</span>
+                <span>Criado em</span>
+                <span className="font-medium">
+                  {new Date(destination.createdAt).toLocaleDateString("pt-BR")}
+                </span>
               </div>
 
               <div className="flex justify-between">
-                <span>Reservas</span>
-                <span className="font-medium">124</span>
+                <span>Atualizado em</span>
+                <span className="font-medium">
+                  {new Date(destination.updatedAt).toLocaleDateString("pt-BR")}
+                </span>
               </div>
 
               <div className="flex justify-between">
-                <span>Taxa de conversão</span>
-                <span className="font-medium">5.05%</span>
+                <span>Status</span>
+                <div className="flex gap-1">
+                  {destination.featured && (
+                    <Badge
+                      variant="outline"
+                      className="bg-blue-100 text-blue-800"
+                    >
+                      Destaque
+                    </Badge>
+                  )}
+                  {destination.popular && (
+                    <Badge
+                      variant="outline"
+                      className="bg-green-100 text-green-800"
+                    >
+                      Popular
+                    </Badge>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -222,17 +295,17 @@ export default async function DestinationDetailsPage({ params }: PageProps) {
             </CardHeader>
             <CardContent className="space-y-2">
               <Button className="w-full" asChild>
-                <Link href={`/destinations/${destination.id}`} target="_blank">
+                <Link href={`/destinations/${destination.$id}`} target="_blank">
                   Visualizar no Site
                 </Link>
               </Button>
               <Button variant="outline" className="w-full" asChild>
-                <Link href={`/admin/destinations/${destination.id}/edit`}>
+                <Link href={`/admin/destinations/${destination.$id}/edit`}>
                   Editar Destino
                 </Link>
               </Button>
               <Button variant="destructive" className="w-full" asChild>
-                <Link href={`/admin/destinations/${destination.id}/delete`}>
+                <Link href={`/admin/destinations/${destination.$id}/delete`}>
                   Excluir Destino
                 </Link>
               </Button>
@@ -243,4 +316,3 @@ export default async function DestinationDetailsPage({ params }: PageProps) {
     </div>
   );
 }
-

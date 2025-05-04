@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, AlertTriangle } from "lucide-react";
@@ -13,47 +13,80 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { getDestinationById, deleteDestination } from "@/actions/destinations";
 
-export default async function DeleteDestinationPage({
+export default function DeleteDestinationPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
   const router = useRouter();
-  const { toast } = useToast();
+  const [destination, setDestination] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
-  const destination = await params;
+
+  useEffect(() => {
+    const loadDestination = async () => {
+      try {
+        setIsLoading(true);
+        const destinationData = await getDestinationById(params.id);
+
+        if (!destinationData) {
+          toast.error("Destino não encontrado");
+          router.push("/admin/destinations");
+          return;
+        }
+
+        setDestination(destinationData);
+      } catch (error) {
+        console.error("Error loading destination:", error);
+        toast.error("Erro ao carregar destino", {
+          description: "Ocorreu um erro ao carregar os dados do destino.",
+        });
+        router.push("/admin/destinations");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDestination();
+  }, [params.id, router]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
 
     try {
-      // Simulação de exclusão
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await deleteDestination(params.id);
 
-      toast({
-        title: "Destino excluído",
+      toast.success("Destino excluído", {
         description: "O destino foi excluído com sucesso.",
       });
 
       router.push("/admin/destinations");
-    } catch (error) {
-      toast({
-        title: "Erro ao excluir",
-        description: "Ocorreu um erro ao excluir o destino.",
-        variant: "destructive",
+    } catch (error: any) {
+      toast.error("Erro ao excluir", {
+        description: error.message || "Ocorreu um erro ao excluir o destino.",
       });
     } finally {
       setIsDeleting(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex h-[50vh] w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Carregando destino...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Button variant="outline" size="icon" asChild>
-          <Link href={`/admin/destinations/${destination.id}`}>
+          <Link href="/admin/destinations">
             <ArrowLeft className="h-4 w-4" />
             <span className="sr-only">Voltar</span>
           </Link>
@@ -74,8 +107,11 @@ export default async function DeleteDestinationPage({
         </CardHeader>
         <CardContent>
           <p>
-            Você está prestes a excluir o destino com ID:{" "}
-            <strong>{destination.id}</strong>
+            Você está prestes a excluir o destino:{" "}
+            <strong>{destination.name}</strong>
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            ID: {destination.$id}
           </p>
           <p className="mt-4 text-muted-foreground">
             Antes de excluir, verifique se não há pacotes associados a este
@@ -85,7 +121,7 @@ export default async function DeleteDestinationPage({
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" asChild>
-            <Link href={`/admin/destinations/${destination.id}`}>Cancelar</Link>
+            <Link href="/admin/destinations">Cancelar</Link>
           </Button>
           <Button
             variant="destructive"
